@@ -49,7 +49,7 @@ const InstancedTrees = ({ template, positions, scaleMultiplier = 1 }: { template
 
 export function TerrainModel(props: any) {
   // Extract scene specifically to render the full graph
-  const { nodes, scene } = useGLTF('/assets/map_done2.glb') as any;
+  const { nodes, scene } = useGLTF('./assets/map_done2.glb') as any;
 
   useLayoutEffect(() => {
     if (scene) {
@@ -86,4 +86,4 @@ export function TerrainModel(props: any) {
   );
 }
 
-useGLTF.preload('/assets/map_done2.glb');
+useGLTF.preload('./assets/map_done2.glb');

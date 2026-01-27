@@ -721,7 +721,7 @@ interface GameBoardProps {
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId = null }) => {
-  const { nodes } = useGLTF('/assets/map_done2.glb') as any;
+  const { nodes } = useGLTF('./assets/map_done2.glb') as any;
   const snowTexture = useSnowTexture();
   const [sunConfig, setSunConfig] = useState<SunConfig>(getMoscowSunConfig());
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
