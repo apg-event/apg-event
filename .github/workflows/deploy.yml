@@ -1,0 +1,58 @@
+name: Deploy to GitHub Pages
+
+on:
+  # Запускать при пуше в ветку main
+  push:
+    branches: ["main"]
+
+  # Разрешить ручной запуск из вкладки Actions
+  workflow_dispatch:
+
+# Права, необходимые для деплоя
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Разрешить только один деплой одновременно
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # 1. Сборка проекта
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        # Если npm ci упадет с ошибкой, замените на: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist' # Папка, куда Vite собирает проект
+
+  # 2. Деплой на GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
