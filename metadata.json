@@ -1,0 +1,5 @@
+{
+  "name": "APG с историей дня",
+  "description": "A real-time dashboard for a multiplayer board game event, visualizing player positions, status, and rules using a connection to a Unity game server.",
+  "requestFramePermissions": []
+}
