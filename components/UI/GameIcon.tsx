@@ -16,7 +16,7 @@ export const GameIcon: React.FC<GameIconProps> = ({ glossaryId, alt, fallback, c
 
     return (
         <img 
-            src={`/assets/icons/${glossaryId}.png`} 
+            src={`./assets/icons/${glossaryId}.png`} 
             alt={alt} 
             className={className}
             onError={() => setError(true)}
