@@ -1,10 +1,10 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Text, Billboard, Stars, Sparkles, Line, Float, useGLTF, Environment, Html } from '@react-three/drei';
+import { OrbitControls, Text, Billboard, Stars, Float, useGLTF, Environment, Html } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
-import { generateBoard, GRID_SIZE, getSectorInfo } from '../../constants';
-import { Player, BoardCell, CellType } from '../../types';
+import { getSectorInfo } from '../../constants';
+import { Player } from '../../types';
 import { TerrainModel } from './TerrainModel';
 import { MousePointer2, X, Sun, Moon, Heart, Package, Sparkles as SparklesIcon, Clock } from 'lucide-react';
 import { GameIcon } from '../UI/GameIcon';
@@ -70,9 +70,9 @@ const getPlayerPosition3D = (nodes: any, tileId: number): THREE.Vector3 => {
 };
 
 // --- DYNAMIC SUN SYSTEM (MSK TIME) ---
+// (Logic unchanged, only shadows removed)
 
-// Event Constants (UTC Timestamps to prevent timezone issues)
-const START_TIMESTAMP = Date.UTC(2026, 1, 2, 13, 0, 0); // Month is 0-indexed (1 = Feb)
+const START_TIMESTAMP = Date.UTC(2026, 1, 2, 13, 0, 0); 
 const END_TIMESTAMP = Date.UTC(2026, 1, 16, 16, 0, 0);
 
 interface SunConfig {
@@ -83,91 +83,70 @@ interface SunConfig {
     ambientIntensity: number;
     fogColor: string;
     isNight: boolean;
-    displayTime: string; // Formatted time string
-    eventStatus: string; // "WIP", "День X", or "ФИНИШ"
+    displayTime: string;
+    eventStatus: string;
 }
 
 const getMoscowSunConfig = (): SunConfig => {
-    // Get current time in Moscow
     const now = new Date();
     const nowMs = now.getTime();
-
-    // --- MATH BASED TIME CALCULATION (UTC+3) ---
-    // Moscow is UTC+3. We calculate purely using numbers to avoid browser localization issues.
-    // This ensures lighting works consistently on all devices/browsers without parsing strings.
     const utcHours = now.getUTCHours();
     const utcMinutes = now.getUTCMinutes();
-    
     let mskHours = utcHours + 3;
     if (mskHours >= 24) mskHours -= 24;
-
     const timeFloat = mskHours + utcMinutes / 60;
 
-    // UI Display String
     const displayTime = now.toLocaleTimeString("ru-RU", {
         timeZone: "Europe/Moscow", 
         hour: '2-digit', 
         minute: '2-digit'
     });
 
-    // Event Day Calculation
     let eventStatus = "WIP";
-    
-    if (nowMs >= END_TIMESTAMP) {
-        eventStatus = "ФИНИШ";
-    } else if (nowMs < START_TIMESTAMP) {
-        eventStatus = "WIP";
-    } else {
+    if (nowMs >= END_TIMESTAMP) eventStatus = "ФИНИШ";
+    else if (nowMs < START_TIMESTAMP) eventStatus = "WIP";
+    else {
         const diff = nowMs - START_TIMESTAMP;
-        // Floor ensures day 1 lasts full 24h
         const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
         eventStatus = `День ${days}`;
     }
 
-    // Configuration constants
     const SUN_DISTANCE = 200;
     
-    // Day Cycle Definition
-    // NIGHT (18:00 - 06:00)
     if (timeFloat < 6 || timeFloat > 18) {
         return {
-            position: [50, 100, 50], // Moon Position
-            color: "#60a5fa", // Cool Blue Moonlight
-            intensity: 0.8,   // Dimmer than sun
-            ambientColor: "#1e3a8a", // Dark Blue Ambient
+            position: [50, 100, 50],
+            color: "#60a5fa",
+            intensity: 0.8,
+            ambientColor: "#1e3a8a",
             ambientIntensity: 0.3,
-            fogColor: "#0f172a", // Dark Fog
+            fogColor: "#0f172a",
             isNight: true,
             displayTime,
             eventStatus
         };
     }
     
-    // DAY (06:00 - 18:00)
-    const dayProgress = (timeFloat - 6) / 12; // 0 at 6am, 1 at 6pm
-    
-    // Calculate Sun Arc using Math.cos/sin for a perfect curve
-    const angle = dayProgress * Math.PI; // 0 to PI
+    const dayProgress = (timeFloat - 6) / 12;
+    const angle = dayProgress * Math.PI;
     const x = -Math.cos(angle) * SUN_DISTANCE; 
-    const y = Math.sin(angle) * SUN_DISTANCE * 0.8; // Height
-    const z = -50; // Slight tilt
+    const y = Math.sin(angle) * SUN_DISTANCE * 0.8;
+    const z = -50;
     
-    let sunColor = "#ffe4b5"; // Default Warm White
-    let fogColor = "#dbeafe"; // Default Blue-ish Fog
+    let sunColor = "#ffe4b5";
+    let fogColor = "#dbeafe";
     let ambientColor = "#e0f2fe";
     let ambientIntensity = 0.6;
     let intensity = 2.0;
 
     if (dayProgress < 0.2) { 
-        // Morning (Golden Hour)
-        sunColor = "#fb923c"; // Orange
+        sunColor = "#fb923c";
         fogColor = "#ffedd5";
         intensity = 1.5;
     } else if (dayProgress > 0.8) {
-        // Evening (Sunset)
-        sunColor = "#f472b6"; // Pink/Purple
+        sunColor = "#f472b6";
         fogColor = "#fae8ff"; 
-        ambientColor = "#5b21b6"; // Purple shadows
+        ambientColor = "#5b21b6";
         intensity = 1.5;
     }
 
@@ -185,7 +164,6 @@ const getMoscowSunConfig = (): SunConfig => {
 };
 
 const DynamicLighting = ({ config, isMobile }: { config: SunConfig, isMobile: boolean }) => {
-    // Update background/fog color
     const { scene } = useThree();
     useEffect(() => {
         scene.background = new THREE.Color(config.fogColor);
@@ -194,98 +172,123 @@ const DynamicLighting = ({ config, isMobile }: { config: SunConfig, isMobile: bo
         }
     }, [config.fogColor, scene]);
 
-    // OPTIMIZATION: Smaller shadow map on mobile
-    const shadowMapSize = isMobile ? 1024 : 2048;
-
+    // OPTIMIZATION: Shadows Removed completely
     return (
         <group>
-             {/* Main Sun/Moon */}
             <directionalLight 
                 position={config.position} 
                 intensity={config.intensity} 
                 color={config.color} 
-                castShadow 
-                shadow-mapSize={[shadowMapSize, shadowMapSize]}
-                shadow-bias={-0.0005}
+                // castShadow={false} <-- Defaults to false
             />
-            {/* Ambient Fill */}
             <ambientLight intensity={config.ambientIntensity} color={config.ambientColor} />
             
-            {/* Secondary Rim Light (Opposite to sun) only during day for volume */}
             {!config.isNight && (
                  <directionalLight position={[-config.position[0], 20, -config.position[2]]} intensity={0.3} color="#bfdbfe" />
             )}
             
-            {/* 
-                UPDATED FOG SETTINGS:
-                Moved 'near' from 100 to 300, and 'far' from 800 to 1500.
-                This pushes the "haze" back to the horizon, keeping the game board clear.
-            */}
             <fog attach="fog" args={[config.fogColor, 300, 1500]} />
         </group>
     );
 };
 
-// --- 3D COMPONENTS ---
+// --- GPU SNOW SYSTEM (Optimized) ---
 
-const SnowSystem = ({ count = 15000 }: { count?: number }) => {
-    const mesh = useRef<any>(null);
-    
-    const particles = useMemo(() => {
-        const temp = [];
+const SnowShader = {
+    vertexShader: `
+      uniform float uTime;
+      uniform float uHeight;
+      attribute float aSpeed;
+      attribute float aScale;
+      attribute vec3 aRandom;
+      
+      void main() {
+        vec3 pos = position;
+        
+        // Fall down logic: InitialY - (speed * time) % height
+        float fall = aSpeed * uTime;
+        pos.y = mod(position.y - fall, uHeight);
+        
+        // Wrap around correction to keep them in [0, uHeight] range relative to camera/center
+        // Actually mod does this, but we center it around 0
+        if(pos.y < 0.0) pos.y += uHeight;
+        pos.y -= uHeight * 0.5; // Center vertically
+        
+        // X/Z Drift
+        pos.x += sin(uTime * 0.5 + aRandom.x) * 3.0;
+        pos.z += cos(uTime * 0.3 + aRandom.z) * 3.0;
+
+        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+        gl_Position = projectionMatrix * mvPosition;
+        
+        // Size attenuation
+        gl_PointSize = (300.0 / -mvPosition.z) * aScale;
+      }
+    `,
+    fragmentShader: `
+      void main() {
+        // Simple circular soft particle
+        vec2 xy = gl_PointCoord.xy - vec2(0.5);
+        float ll = length(xy);
+        if(ll > 0.5) discard;
+        
+        float alpha = (0.5 - ll) * 2.0;
+        gl_FragColor = vec4(1.0, 1.0, 1.0, alpha * 0.8);
+      }
+    `
+};
+
+const GPUSnowSystem = ({ count = 5000 }: { count?: number }) => {
+    const points = useRef<THREE.Points>(null);
+    const geometry = useMemo(() => {
+        const geo = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const speeds = new Float32Array(count);
+        const scales = new Float32Array(count);
+        const randoms = new Float32Array(count * 3);
+
         for (let i = 0; i < count; i++) {
-            const t = Math.random() * 100;
-            const factor = 20 + Math.random() * 100;
-            const speed = 0.01 + Math.random() / 200;
-            const xFactor = -1000 + Math.random() * 1400; 
-            const yFactor = 50 + Math.random() * 200; 
-            const zFactor = -1000 + Math.random() * 1400;
+            positions[i * 3] = (Math.random() - 0.5) * 600; // X
+            positions[i * 3 + 1] = Math.random() * 200;     // Y (initial)
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 600; // Z
+
+            speeds[i] = 10 + Math.random() * 20; // Falling speed
+            scales[i] = 0.5 + Math.random() * 0.5;
             
-            temp.push({ t, factor, speed, xFactor, yFactor, zFactor, mx: 0, my: 0 });
+            randoms[i * 3] = Math.random() * 10;
+            randoms[i * 3 + 1] = Math.random() * 10;
+            randoms[i * 3 + 2] = Math.random() * 10;
         }
-        return temp;
+
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geo.setAttribute('aSpeed', new THREE.BufferAttribute(speeds, 1));
+        geo.setAttribute('aScale', new THREE.BufferAttribute(scales, 1));
+        geo.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 3));
+        return geo;
     }, [count]);
 
-    const dummy = useMemo(() => new THREE.Vector3(), []);
+    const uniforms = useMemo(() => ({
+        uTime: { value: 0 },
+        uHeight: { value: 200.0 }
+    }), []);
 
-    useFrame((state, delta) => {
-        if (!mesh.current) return;
-        
-        particles.forEach((particle, i) => {
-            let { t, factor, speed, xFactor, yFactor, zFactor } = particle;
-            
-            // Update time
-            t = particle.t += speed / 2;
-            const a = Math.cos(t) + Math.sin(t * 1) / 10;
-            const b = Math.sin(t) + Math.cos(t * 2) / 10;
-            const s = Math.cos(t);
-
-            // Simulate falling and drifting
-            particle.my -= speed * 4; 
-            
-            if (particle.my + yFactor < -50) {
-                particle.my = 0; 
-            }
-            
-            dummy.set(
-                (particle.mx / 10) * a + xFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 1) * factor) / 10,
-                particle.my + yFactor, 
-                (particle.my / 10) * b + zFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 2) * factor) / 10
-            );
-            
-            const scale = 0.4; 
-            mesh.current.setMatrixAt(i, 
-                new THREE.Matrix4().compose(dummy, new THREE.Quaternion(), new THREE.Vector3(scale, scale, scale))
-            );
-        });
-        mesh.current.instanceMatrix.needsUpdate = true;
+    useFrame((state) => {
+        if (points.current && points.current.material) {
+            (points.current.material as THREE.ShaderMaterial).uniforms.uTime.value = state.clock.getElapsedTime();
+        }
     });
 
     return (
-        <instancedMesh ref={mesh} args={[undefined, undefined, count]} frustumCulled={false}>
-            <octahedronGeometry args={[1, 0]} /> 
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.6} depthWrite={false} />
-        </instancedMesh>
+        <points ref={points} geometry={geometry}>
+            <shaderMaterial 
+                vertexShader={SnowShader.vertexShader}
+                fragmentShader={SnowShader.fragmentShader}
+                uniforms={uniforms}
+                transparent
+                depthWrite={false}
+                blending={THREE.AdditiveBlending}
+            />
+        </points>
     );
 };
 
@@ -299,16 +302,12 @@ const PlayerTooltip = ({ player, rank, onClose }: { player: Player, rank: number
                 onClick={(e) => e.stopPropagation()} 
              >
                 <div className="w-64 bg-midnight-950/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 relative">
-                    
-                    {/* Close Button */}
                     <button 
                         onClick={(e) => { e.stopPropagation(); onClose(); }}
                         className="absolute top-2 right-2 p-1 text-white/30 hover:text-white transition-colors z-50 rounded-full hover:bg-white/10"
                     >
                         <X size={16} />
                     </button>
-
-                    {/* Header */}
                     <div className="px-4 py-3 bg-white/5 border-b border-white/10">
                         <div className="font-bold text-lg text-white mb-1 truncate">{player.name}</div>
                         <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
@@ -317,11 +316,7 @@ const PlayerTooltip = ({ player, rank, onClose }: { player: Player, rank: number
                             <span>Клетка {player.position}</span>
                         </div>
                     </div>
-                    
-                    {/* Content */}
                     <div className="p-4 space-y-4">
-                        
-                        {/* HP Bar */}
                         <div className="space-y-1.5">
                             <div className="flex justify-between items-center text-xs">
                                 <div className="flex items-center gap-1.5 text-rose-400 font-bold">
@@ -338,8 +333,6 @@ const PlayerTooltip = ({ player, rank, onClose }: { player: Player, rank: number
                                 ></div>
                             </div>
                         </div>
-
-                        {/* Effects */}
                         {player.effects && player.effects.length > 0 && (
                              <div className="space-y-2">
                                 <div className="flex items-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-widest font-bold">
@@ -371,8 +364,6 @@ const PlayerTooltip = ({ player, rank, onClose }: { player: Player, rank: number
                                 </div>
                              </div>
                         )}
-
-                        {/* Inventory */}
                         <div className="space-y-2">
                              <div className="flex items-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-widest font-bold">
                                 <Package size={10} className="text-amber-400" /> Инвентарь
@@ -403,12 +394,9 @@ const PlayerTooltip = ({ player, rank, onClose }: { player: Player, rank: number
                                 <div className="text-[10px] italic text-slate-600">Пусто...</div>
                              )}
                         </div>
-
                     </div>
                     <div className="h-1 w-full bg-gradient-to-r from-ice-500 via-ice-300 to-ice-500 opacity-20"></div>
                 </div>
-                
-                {/* Arrow at the bottom */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 translate-y-[50%] w-3 h-3 bg-midnight-950 border-r border-b border-white/20 rotate-45"></div>
              </div>
         </Html>
@@ -431,14 +419,12 @@ const Player3D = ({ player, nodes, stackIndex, stackSize, isSelected, onSelect, 
 
     const targetPos = useMemo(() => {
         const basePos = getPlayerPosition3D(nodes, player.position);
-        
         if (stackSize > 1) {
             const radius = 2.0; 
             const angle = (stackIndex / stackSize) * Math.PI * 2;
             basePos.x += Math.cos(angle) * radius;
             basePos.z += Math.sin(angle) * radius;
         }
-
         return basePos;
     }, [player.position, nodes, stackIndex, stackSize]);
 
@@ -476,7 +462,6 @@ const Player3D = ({ player, nodes, stackIndex, stackSize, isSelected, onSelect, 
                 </mesh>
                 <pointLight position={[0, 4, 0]} distance={10} intensity={3} color={player.color} />
                 
-                {/* Name Billboard - Hidden if tooltip is open to avoid clutter */}
                 {!isSelected && (
                     <Billboard position={[0, 9, 0]}>
                         <Text
@@ -507,7 +492,6 @@ const Player3D = ({ player, nodes, stackIndex, stackSize, isSelected, onSelect, 
 
                 {isSelected && (
                     <>
-                        {/* Selection Ring */}
                         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.5, 0]}>
                              <ringGeometry args={[2, 2.3, 32]} />
                              <meshBasicMaterial color="white" toneMapped={false} />
@@ -520,41 +504,34 @@ const Player3D = ({ player, nodes, stackIndex, stackSize, isSelected, onSelect, 
     );
 };
 
-// --- INTERACTIVE TILES ---
+// --- OPTIMIZED INTERACTIVE TILES (INSTANCING) ---
 
 const TileTooltip = ({ id, onClose }: { id: number, onClose: () => void }) => {
     const info = getSectorInfo(id);
-
+    // Find Position 3D to attach HTML. We use a simpler method since we don't have direct access to the node here easily.
+    // Instead, we just float it above the "active" selection.
+    
     return (
         <Html position={[0, 1.5, 0]} style={{ pointerEvents: 'none' }} zIndexRange={[100, 0]}>
-             {/* 
-                Wrapper to position bottom at the anchor point.
-                pointer-events-auto is crucial for the tooltip content to be interactable.
-             */}
              <div 
                 className="relative pointer-events-auto transform -translate-x-1/2 -translate-y-[100%] pb-4 transition-all duration-200"
-                onClick={(e) => e.stopPropagation()} // Prevent clicking through to other things
+                onClick={(e) => e.stopPropagation()} 
              >
                 <div 
                     className="w-56 bg-midnight-950/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 relative"
                     style={{ boxShadow: `0 0 30px ${info.color}40` }}
                 >
-                    {/* Close Button */}
                     <button 
                         onClick={(e) => { e.stopPropagation(); onClose(); }}
                         className="absolute top-2 right-2 p-1 text-white/30 hover:text-white transition-colors z-50 rounded-full hover:bg-white/10"
                     >
                         <X size={16} />
                     </button>
-
-                    {/* Header */}
                     <div className="px-4 py-2 flex justify-between items-center bg-white/5 border-b border-white/10">
                         <span className="font-mono text-xl font-black text-white" style={{ textShadow: `0 0 10px ${info.color}` }}>
                             {id}
                         </span>
                     </div>
-                    
-                    {/* Content */}
                     <div className="p-4 space-y-2">
                          <div className="text-sm font-medium text-ice-100 leading-snug">
                              {info.text}
@@ -562,58 +539,79 @@ const TileTooltip = ({ id, onClose }: { id: number, onClose: () => void }) => {
                     </div>
                     <div className="h-1 w-full" style={{ backgroundColor: info.color }}></div>
                 </div>
-                
-                {/* Arrow at the bottom */}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 translate-y-[50%] w-4 h-4 bg-midnight-950 border-r border-b border-white/20 rotate-45"></div>
              </div>
         </Html>
     );
 };
 
-const InteractiveTiles = ({ nodes }: { nodes: any }) => {
+const InstancedInteractiveTiles = ({ nodes }: { nodes: any }) => {
     const [activeTile, setActiveTile] = useState<number | null>(null);
-    const tileIds = useMemo(() => Array.from({ length: 100 }, (_, i) => i + 1), []);
+    const meshRef = useRef<THREE.InstancedMesh>(null);
+    
+    // Calculate matrices once
+    const tileData = useMemo(() => {
+        const positions = [];
+        const ids = [];
+        const dummy = new THREE.Object3D();
+        
+        for (let i = 1; i <= 100; i++) {
+            const pos = getPlayerPosition3D(nodes, i);
+            if(pos) {
+                dummy.position.copy(pos);
+                dummy.position.y += 0.5; // Slightly up
+                dummy.updateMatrix();
+                positions.push(dummy.matrix.clone());
+                ids.push(i);
+            }
+        }
+        return { positions, ids };
+    }, [nodes]);
+
+    useLayoutEffect(() => {
+        if (meshRef.current) {
+            tileData.positions.forEach((matrix, i) => {
+                meshRef.current!.setMatrixAt(i, matrix);
+            });
+            meshRef.current.instanceMatrix.needsUpdate = true;
+        }
+    }, [tileData]);
+
+    const activeTilePos = useMemo(() => {
+        if (!activeTile) return null;
+        return getPlayerPosition3D(nodes, activeTile);
+    }, [activeTile, nodes]);
 
     return (
         <group>
-            {tileIds.map(id => {
-                const pos = getPlayerPosition3D(nodes, id);
-                if (!pos) return null;
+            {/* The Clickable Hitboxes (Invisible but raycastable) */}
+            <instancedMesh 
+                ref={meshRef} 
+                args={[undefined, undefined, tileData.positions.length]}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    // Map instanceId to Tile ID
+                    // Note: Three.js might sort instances? Usually instanceId matches index set in setMatrixAt.
+                    const tileId = tileData.ids[e.instanceId!];
+                    setActiveTile(prev => prev === tileId ? null : tileId);
+                }}
+                onPointerOver={() => document.body.style.cursor = 'help'}
+                onPointerOut={() => document.body.style.cursor = 'default'}
+            >
+                <boxGeometry args={[4, 1, 4]} />
+                <meshBasicMaterial visible={false} />
+            </instancedMesh>
 
-                const isActive = activeTile === id;
-
-                return (
-                    <group key={id} position={pos}>
-                        {/* 
-                            Interaction Mesh 
-                            - onClick: Toggles Tooltip
-                            - onPointerEnter: Changes cursor
-                        */}
-                        <mesh 
-                            position={[0, 0.5, 0]} 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveTile(isActive ? null : id);
-                            }}
-                            onPointerEnter={() => document.body.style.cursor = 'help'}
-                            onPointerLeave={() => document.body.style.cursor = 'default'}
-                            visible={true} 
-                        >
-                            <boxGeometry args={[4, 1, 4]} />
-                            <meshBasicMaterial color={isActive ? "white" : "white"} transparent opacity={isActive ? 0.2 : 0} side={THREE.DoubleSide} />
-                        </mesh>
-                        
-                        {isActive && (
-                            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.2, 0]}>
-                                <ringGeometry args={[2.5, 2.8, 32]} />
-                                <meshBasicMaterial color="#38bdf8" />
-                            </mesh>
-                        )}
-
-                        {isActive && <TileTooltip id={id} onClose={() => setActiveTile(null)} />}
-                    </group>
-                );
-            })}
+            {/* The Active Highlight Cursor (Only renders when something is selected) */}
+            {activeTile && activeTilePos && (
+                <group position={activeTilePos}>
+                     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.7, 0]}>
+                        <ringGeometry args={[2.5, 2.8, 32]} />
+                        <meshBasicMaterial color="#38bdf8" />
+                    </mesh>
+                    <TileTooltip id={activeTile} onClose={() => setActiveTile(null)} />
+                </group>
+            )}
         </group>
     );
 };
@@ -631,8 +629,6 @@ const CameraController = ({
     const { camera } = useThree();
     const controlsRef = useRef<any>(null);
     const [isAnimating, setIsAnimating] = useState(false);
-    
-    // Track the last focused ID to prevent auto-snapping on data updates
     const lastFocusedIdRef = useRef<string | null>(null);
 
     const animRef = useRef({
@@ -645,7 +641,6 @@ const CameraController = ({
         endTarget: new THREE.Vector3()
     });
 
-    // Reset the tracker if the focused ID is cleared externally (optional but good practice)
     useEffect(() => {
         if (focusedPlayerId === null) {
             lastFocusedIdRef.current = null;
@@ -654,14 +649,10 @@ const CameraController = ({
 
     useEffect(() => {
         if (!focusedPlayerId || !nodes || players.length === 0 || !controlsRef.current) return;
-
-        // PREVENT AUTO-SNAP:
-        // If the ID hasn't changed since the last animation (but 'players' data updated), ignore this run.
         if (focusedPlayerId === lastFocusedIdRef.current) return;
 
         const player = players.find(p => p.id === focusedPlayerId);
         if (player) {
-            // Update the tracker so we don't animate to this ID again until it changes
             lastFocusedIdRef.current = focusedPlayerId;
 
             const targetPos = getPlayerPosition3D(nodes, player.position);
@@ -685,7 +676,6 @@ const CameraController = ({
             controls.enabled = !isAnimating;
             controls.minDistance = 40; 
             controls.maxDistance = 300;
-            // Increased from PI/2.2 to PI/2.05 to allow looking lower (closer to horizon) without clipping
             controls.maxPolarAngle = Math.PI / 2.05; 
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
@@ -722,9 +712,7 @@ const CameraController = ({
     });
 
     return (
-        <OrbitControls 
-            ref={controlsRef}
-        />
+        <OrbitControls ref={controlsRef} />
     );
 };
 
@@ -736,17 +724,20 @@ interface GameBoardProps {
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId = null }) => {
+  // Model loading now handled entirely by TerrainModel with KTX2 support
+  // We pass nodes down, but we load them in TerrainModel mostly. 
+  // To avoid double loading, let's keep the hook in one place or use useGLTF.preload.
+  // Actually, nodes are needed for Tiles and Camera.
+  // Let's rely on TerrainModel's preloading or standard caching.
   const { nodes } = useGLTF('./assets/map_done2.glb') as any;
+  
   const snowTexture = useSnowTexture();
   const [sunConfig, setSunConfig] = useState<SunConfig>(getMoscowSunConfig());
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-
-  // OPTIMIZATION: Mobile Detection
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
-        // Simple check for screen width or user agent
         const mobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         setIsMobile(mobile);
     };
@@ -755,14 +746,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Sync focused player from sidebar with selected player in 3D
   useEffect(() => {
     if (focusedPlayerId) {
         setSelectedPlayerId(focusedPlayerId);
     }
   }, [focusedPlayerId]);
 
-  // Update time every minute
   useEffect(() => {
     const interval = setInterval(() => {
         setSunConfig(getMoscowSunConfig());
@@ -770,7 +759,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
     return () => clearInterval(interval);
   }, []);
 
-  // Pre-calculate stacking groups
   const playersByTile = useMemo(() => {
       const map: Record<number, Player[]> = {};
       players.forEach(p => {
@@ -780,7 +768,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
       return map;
   }, [players]);
 
-  // Calculate Ranks
   const playerRanks = useMemo(() => {
       const sorted = [...players].sort((a, b) => b.position - a.position);
       const ranks: Record<string, number> = {};
@@ -790,83 +777,74 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
 
   return (
     <div className="flex-1 h-full w-full relative bg-midnight-950 overflow-hidden">
-      <Canvas 
-        shadows 
-        camera={{ position: [-50, 150, 150], fov: 45 }} 
-        // OPTIMIZATION: Cap DPR on mobile to 1 to prevent overheating and OOM
-        dpr={isMobile ? 1 : [1, 1.5]}
-        gl={{ 
-            toneMapping: THREE.ReinhardToneMapping, 
-            toneMappingExposure: 1.2,
-            // OPTIMIZATION: Helps with performance
-            powerPreference: "high-performance",
-            preserveDrawingBuffer: false,
-        }} 
-        // Stop event propagation to allow clicking through UI if needed, but important for 3D clicks
-        onPointerMissed={() => setSelectedPlayerId(null)}
-      >
-        <DynamicLighting config={sunConfig} isMobile={isMobile} />
-        
-        {/* OPTIMIZATION: Reduce environment intensity or disable presets if needed, but 'city' is usually cached well */}
-        <Environment preset="city" environmentIntensity={0} />
+        <Canvas 
+            camera={{ position: [-50, 150, 150], fov: 45 }} 
+            dpr={isMobile ? 1 : [1, 1.5]}
+            gl={{ 
+                toneMapping: THREE.ReinhardToneMapping, 
+                toneMappingExposure: 1.2,
+                powerPreference: "high-performance",
+                preserveDrawingBuffer: false,
+            }} 
+            onPointerMissed={() => setSelectedPlayerId(null)}
+        >
+            <DynamicLighting config={sunConfig} isMobile={isMobile} />
+            <Environment preset="city" environmentIntensity={0} />
 
-        <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-        
-        {/* OPTIMIZATION: Reduce snow count on mobile */}
-        <SnowSystem count={isMobile ? 3000 : 15000} />
+            <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+            
+            {/* GPU SNOW SYSTEM */}
+            <GPUSnowSystem count={isMobile ? 3000 : 8000} />
 
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -10, 0]} receiveShadow>
-            <planeGeometry args={[10000, 10000]} />
-            <meshStandardMaterial 
-                color="#f0f9ff" 
-                roughness={0.8} 
-                metalness={0.1}
-                bumpMap={snowTexture}
-                bumpScale={1.5}
-            />
-        </mesh>
-        
-        <CameraController focusedPlayerId={focusedPlayerId} players={players} nodes={nodes} />
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -10, 0]}>
+                <planeGeometry args={[5000, 5000]} />
+                <meshStandardMaterial 
+                    color="#f0f9ff" 
+                    roughness={0.8} 
+                    metalness={0.1}
+                    bumpMap={snowTexture}
+                    bumpScale={1.5}
+                />
+            </mesh>
+            
+            <CameraController focusedPlayerId={focusedPlayerId} players={players} nodes={nodes} />
 
-        <TerrainModel isMobile={isMobile} />
-        
-        {nodes && <InteractiveTiles nodes={nodes} />}
+            <TerrainModel isMobile={isMobile} />
+            
+            {/* INSTANCED INTERACTIVE TILES */}
+            {nodes && <InstancedInteractiveTiles nodes={nodes} />}
 
-        <group>
-            {players.map(player => {
-                const stack = playersByTile[player.position] || [];
-                const index = stack.findIndex(p => p.id === player.id);
-                return (
-                    <Player3D 
-                        key={player.id} 
-                        player={player} 
-                        nodes={nodes} 
-                        stackIndex={index !== -1 ? index : 0}
-                        stackSize={stack.length}
-                        isSelected={selectedPlayerId === player.id}
-                        onSelect={setSelectedPlayerId}
-                        rank={playerRanks[player.id] || 0}
-                    />
-                );
-            })}
-        </group>
+            <group>
+                {players.map(player => {
+                    const stack = playersByTile[player.position] || [];
+                    const index = stack.findIndex(p => p.id === player.id);
+                    return (
+                        <Player3D 
+                            key={player.id} 
+                            player={player} 
+                            nodes={nodes} 
+                            stackIndex={index !== -1 ? index : 0}
+                            stackSize={stack.length}
+                            isSelected={selectedPlayerId === player.id}
+                            onSelect={setSelectedPlayerId}
+                            rank={playerRanks[player.id] || 0}
+                        />
+                    );
+                })}
+            </group>
 
-        {/* OPTIMIZATION: Disable EffectComposer (Bloom/Vignette) on Mobile entirely */}
-        {!isMobile && (
-            <EffectComposer enableNormalPass={false}>
-                <Bloom luminanceThreshold={1.5} mipmapBlur intensity={0.05} radius={0.4} />
-                <Vignette eskil={false} offset={0.1} darkness={0.8} />
-            </EffectComposer>
-        )}
+            {!isMobile && (
+                <EffectComposer enableNormalPass={false}>
+                    <Bloom luminanceThreshold={1.5} mipmapBlur intensity={0.05} radius={0.4} />
+                    <Vignette eskil={false} offset={0.1} darkness={0.8} />
+                </EffectComposer>
+            )}
 
-      </Canvas>
+        </Canvas>
       
-      {/* UI Overlay - Responsive Positioning */}
-      {/* Moved to top-right on mobile, bottom-right on desktop */}
+      {/* UI Overlay */}
       <div className="absolute top-4 right-4 md:top-auto md:bottom-6 md:right-6 pointer-events-none select-none flex flex-col gap-3 items-end z-30">
-          
-          {/* Time Display Block - Compact on Mobile */}
-          <div className="bg-black/60 backdrop-blur-xl text-white px-3 py-2 md:px-5 md:py-4 rounded-xl md:rounded-2xl border border-white/10 flex items-center gap-3 md:gap-4 w-fit animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-2xl">
+          <div className="bg-black/60 backdrop-blur-xl text-white px-3 py-2 md:px-5 md:py-4 rounded-xl md:rounded-2xl border border-white/10 flex items-center gap-3 md:gap-4 w-fit animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-2xl pointer-events-auto">
               <div className="w-10 h-10 md:w-14 md:h-14 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-full border border-white/10 shadow-inner">
                  {sunConfig.isNight ? (
                     <Moon className="w-6 h-6 md:w-8 md:h-8 text-ice-300 drop-shadow-[0_0_10px_rgba(147,197,253,0.5)]" />
@@ -884,15 +862,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
               </div>
           </div>
 
-          {/* Controls Help Block - Hidden on Mobile to save space */}
           <div className="hidden md:flex bg-black/50 backdrop-blur-md text-white/50 text-xs px-3 py-2 rounded-lg border border-white/5 items-center gap-3">
-              <span className="flex items-center gap-1"><MousePointer2 className="w-3 h-3" /> ЛКМ - Вращение</span>
-              <span className="w-px h-3 bg-white/10"></span>
-              <span>ПКМ - Панорама</span>
-              <span className="w-px h-3 bg-white/10"></span>
-              <span>Колесо - Зум</span>
-              <span className="w-px h-3 bg-white/10"></span>
-              <span>Клик по клетке - Инфо</span>
+                <span className="flex items-center gap-1"><MousePointer2 className="w-3 h-3" /> ЛКМ - Вращение</span>
+                <span className="w-px h-3 bg-white/10"></span>
+                <span>ПКМ - Панорама</span>
+                <span className="w-px h-3 bg-white/10"></span>
+                <span>Колесо - Зум</span>
+                <span className="w-px h-3 bg-white/10"></span>
+                <span>Клик по клетке - Инфо</span>
           </div>
       </div>
     </div>
