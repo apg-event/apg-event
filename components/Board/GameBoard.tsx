@@ -92,10 +92,29 @@ const getMoscowSunConfig = (): SunConfig => {
     const now = new Date();
     const nowMs = now.getTime();
 
-    const moscowTimeStr = now.toLocaleTimeString("en-US", {timeZone: "Europe/Moscow", hour12: false});
-    const displayTime = now.toLocaleTimeString("ru-RU", {timeZone: "Europe/Moscow", hour: '2-digit', minute: '2-digit'});
-    const [hours, minutes] = moscowTimeStr.split(':').map(Number);
+    // Use Intl.DateTimeFormat for reliable parsing across all browsers/locales
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Europe/Moscow',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+    });
+    
+    const parts = formatter.formatToParts(now);
+    const hourPart = parts.find(p => p.type === 'hour');
+    const minutePart = parts.find(p => p.type === 'minute');
+    
+    const hours = hourPart ? parseInt(hourPart.value, 10) : 12;
+    const minutes = minutePart ? parseInt(minutePart.value, 10) : 0;
+    
     const timeFloat = hours + minutes / 60;
+
+    // UI Display String
+    const displayTime = now.toLocaleTimeString("ru-RU", {
+        timeZone: "Europe/Moscow", 
+        hour: '2-digit', 
+        minute: '2-digit'
+    });
 
     // Event Day Calculation
     let eventStatus = "WIP";
@@ -819,30 +838,31 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
 
       </Canvas>
       
-      {/* UI Overlay */}
-      <div className="absolute bottom-6 left-6 pointer-events-none select-none flex flex-col gap-3">
+      {/* UI Overlay - Responsive Positioning */}
+      {/* Moved to top-right on mobile, bottom-right on desktop */}
+      <div className="absolute top-4 right-4 md:top-auto md:bottom-6 md:right-6 pointer-events-none select-none flex flex-col gap-3 items-end z-30">
           
-          {/* Time Display Block */}
-          <div className="bg-black/60 backdrop-blur-xl text-white px-5 py-4 rounded-2xl border border-white/10 flex items-center gap-4 w-fit animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-2xl">
-              <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-full border border-white/10 shadow-inner">
+          {/* Time Display Block - Compact on Mobile */}
+          <div className="bg-black/60 backdrop-blur-xl text-white px-3 py-2 md:px-5 md:py-4 rounded-xl md:rounded-2xl border border-white/10 flex items-center gap-3 md:gap-4 w-fit animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-2xl">
+              <div className="w-10 h-10 md:w-14 md:h-14 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-full border border-white/10 shadow-inner">
                  {sunConfig.isNight ? (
-                    <Moon className="w-8 h-8 text-ice-300 drop-shadow-[0_0_10px_rgba(147,197,253,0.5)]" />
+                    <Moon className="w-6 h-6 md:w-8 md:h-8 text-ice-300 drop-shadow-[0_0_10px_rgba(147,197,253,0.5)]" />
                  ) : (
-                    <Sun className="w-8 h-8 text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse-slow" />
+                    <Sun className="w-6 h-6 md:w-8 md:h-8 text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse-slow" />
                  )}
               </div>
-              <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Время (МСК)</span>
-                  <div className="flex items-baseline gap-3">
-                      <span className="text-2xl font-mono font-bold leading-none text-white">{sunConfig.displayTime}</span>
-                      <span className="text-slate-600 font-light">|</span>
-                      <span className="text-lg font-bold text-ice-300 drop-shadow-sm">{sunConfig.eventStatus}</span>
+              <div className="flex flex-col items-end">
+                  <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400 hidden md:block">Время (МСК)</span>
+                  <div className="flex items-baseline gap-2 md:gap-3">
+                      <span className="text-lg md:text-2xl font-mono font-bold leading-none text-white">{sunConfig.displayTime}</span>
+                      <span className="text-slate-600 font-light text-sm md:text-base">|</span>
+                      <span className="text-sm md:text-lg font-bold text-ice-300 drop-shadow-sm">{sunConfig.eventStatus}</span>
                   </div>
               </div>
           </div>
 
-          {/* Controls Help Block */}
-          <div className="bg-black/50 backdrop-blur-md text-white/50 text-xs px-3 py-2 rounded-lg border border-white/5 flex items-center gap-3">
+          {/* Controls Help Block - Hidden on Mobile to save space */}
+          <div className="hidden md:flex bg-black/50 backdrop-blur-md text-white/50 text-xs px-3 py-2 rounded-lg border border-white/5 items-center gap-3">
               <span className="flex items-center gap-1"><MousePointer2 className="w-3 h-3" /> ЛКМ - Вращение</span>
               <span className="w-px h-3 bg-white/10"></span>
               <span>ПКМ - Панорама</span>
