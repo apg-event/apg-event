@@ -46,23 +46,30 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           </div>
       </div>
 
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 w-full z-50 bg-midnight-900/80 backdrop-blur-md border-b border-white/5 flex justify-between items-center p-4">
+      {/* Mobile Header (Fixed Height: h-16 / 64px) */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 z-50 bg-midnight-900/90 backdrop-blur-xl border-b border-white/10 flex justify-between items-center px-4 shadow-lg">
         <div className="flex items-center gap-2 font-bold text-lg text-ice-300">
-           <Snowflake className="text-ice-400 animate-spin-slow" /> APG<span className="text-white">EVENT</span>
+           <Snowflake className="text-ice-400 animate-spin-slow w-6 h-6" /> 
+           <span className="tracking-wider">APG <span className="text-white">EVENT</span></span>
         </div>
-        <button onClick={() => setSidebarOpen(!isSidebarOpen)}>
-          {isSidebarOpen ? <X /> : <Menu />}
+        <button 
+          onClick={() => setSidebarOpen(!isSidebarOpen)}
+          className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
+        >
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {/* Sidebar */}
       <aside className={`
-        fixed md:relative z-40 h-full w-72 flex flex-col transition-transform duration-300 flex-shrink-0
+        fixed md:relative z-40 w-full md:w-72 flex flex-col transition-all duration-300 flex-shrink-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        bg-midnight-900/40 backdrop-blur-xl border-r border-white/5 shadow-2xl
+        bg-midnight-900/95 md:bg-midnight-900/40 backdrop-blur-xl border-r border-white/5 shadow-2xl
+        
+        /* Mobile specific positioning: Top-16 to sit below header, Height calc to fill rest */
+        top-16 md:top-0 h-[calc(100vh-4rem)] md:h-full
       `}>
-        {/* Logo */}
+        {/* Logo (Desktop only) */}
         <div className="p-6 hidden md:flex items-center gap-3 font-bold text-2xl tracking-wider flex-shrink-0 text-white">
            <div className="relative w-10 h-10 flex items-center justify-center">
              <div className="absolute inset-0 bg-ice-500 blur-lg opacity-40 rounded-full animate-pulse-slow"></div>
@@ -72,7 +79,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         </div>
 
         {/* Nav (Fixed at top under logo) */}
-        <nav className="px-4 pb-4 space-y-2 flex-shrink-0">
+        <nav className="px-4 pb-4 pt-4 md:pt-0 space-y-2 flex-shrink-0">
           {navItems.map(item => (
             <button
               key={item.id}
@@ -115,7 +122,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             {sortedPlayers.map((p, idx) => (
               <div 
                 key={p.id} 
-                onClick={() => onPlayerFocus(p.id)}
+                onClick={() => {
+                    onPlayerFocus(p.id);
+                    setSidebarOpen(false); // Auto-close on mobile selection
+                }}
                 className="relative bg-white/5 hover:bg-white/10 border border-white/5 p-3 rounded-xl flex items-center gap-4 group transition-colors cursor-pointer hover:border-ice-500/30"
               >
                  
@@ -176,13 +186,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       </aside>
 
       {/* Main Content Wrapper */}
-      <main className="flex-1 relative overflow-hidden flex flex-col md:flex-row z-10">
+      {/* Added pt-16 on mobile to account for fixed header */}
+      <main className="flex-1 relative overflow-hidden flex flex-col md:flex-row z-10 pt-16 md:pt-0">
          {children}
       </main>
 
       {/* Overlay for mobile sidebar */}
       {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden" onClick={() => setSidebarOpen(false)}></div>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden top-16" onClick={() => setSidebarOpen(false)}></div>
       )}
     </div>
   );

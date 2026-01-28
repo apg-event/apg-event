@@ -205,14 +205,14 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
         <div className="max-w-[1600px] mx-auto p-4 lg:p-8 space-y-6">
 
             {/* === BLOCK 1: HERO CARD (Info, Stats, Inventory, Effects) === */}
-            <div className="bg-midnight-900/40 backdrop-blur-md border border-white/5 rounded-3xl p-6 lg:p-8 shadow-xl">
+            <div className="bg-midnight-900/40 backdrop-blur-md border border-white/5 rounded-3xl p-4 md:p-6 lg:p-8 shadow-xl">
                 
                 {/* --- TOP SECTION: Avatar, Info, HP, Stats --- */}
-                <div className="flex flex-col md:flex-row gap-8 items-start mb-8">
+                <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start mb-8">
                     
                     {/* Avatar Column */}
-                    <div className="flex flex-col items-center gap-4 flex-shrink-0 mx-auto md:mx-0">
-                        <div className="w-32 h-32 rounded-full border-4 border-midnight-800 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden relative group">
+                    <div className="flex flex-col items-center gap-4 flex-shrink-0">
+                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-midnight-800 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden relative group">
                              <img src={activePlayer.avatarUrl} alt={activePlayer.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                              {activePlayer.isDead && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Skull className="text-white/50 w-12 h-12" /></div>}
                         </div>
@@ -222,12 +222,12 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                     </div>
 
                     {/* Info Column */}
-                    <div className="flex-1 w-full space-y-6">
+                    <div className="flex-1 w-full space-y-6 text-center md:text-left">
                         
                         {/* Name & Badges */}
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
-                            <div>
-                                <h1 className="text-3xl lg:text-4xl font-black text-white tracking-tight leading-none mb-1">
+                        <div className="flex flex-col md:flex-row justify-between items-center md:items-center gap-4 border-b border-white/5 pb-6">
+                            <div className="w-full md:w-auto">
+                                <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-none mb-1">
                                     {activePlayer.name}
                                 </h1>
                                 {/* Category Text */}
@@ -237,7 +237,7 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                                     </div>
                                 )}
                                 
-                                <div className="flex flex-wrap gap-3 mt-2">
+                                <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
                                     <div className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                                         <Trophy size={12} /> {rank} МЕСТО
                                     </div>
@@ -275,7 +275,7 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                             </div>
 
                             {/* Stats Buttons (Filters) */}
-                            <div className="grid grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {[
                                     { id: 'ALL', label: 'Всего игр', val: activePlayer.stats.gamesPlayed, icon: Gamepad2, color: 'text-ice-400', bg: 'bg-ice-500/10', border: 'border-ice-500/20' },
                                     { id: 'WINS', label: 'Пройдено', val: activePlayer.stats.wins, icon: Trophy, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
@@ -304,22 +304,18 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                 </div>
 
                 {/* --- BOTTOM SPLIT SECTION: Inventory & Effects --- */}
-                {/* 
-                    Flex row to allow Inventory to be fixed width and Effects to take remaining.
-                    Align start to keep them at top.
-                */}
                 <div className="flex flex-col xl:flex-row gap-8 items-start pt-8 border-t border-white/5">
                     
-                    {/* Left: Inventory - STRICT LIMIT: grid-cols-5 and shrink-0 */}
-                    <div className="flex-shrink-0 xl:w-[23rem]">
+                    {/* Left: Inventory - Responsive Grid */}
+                    <div className="w-full xl:w-[23rem] flex-shrink-0">
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-4">
                             <Package className="w-4 h-4 text-amber-400" /> Инвентарь
                         </h3>
-                        <div className="grid grid-cols-5 gap-3">
+                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                             {activePlayer.inventory.length > 0 ? activePlayer.inventory.map(item => (
                                 <SmartTooltip 
                                     key={item.id}
-                                    className="border border-white/10 rounded-xl hover:border-ice-400 hover:shadow-[0_0_15px_rgba(56,189,248,0.3)] bg-midnight-950 transition-all"
+                                    className="aspect-square border border-white/10 rounded-xl hover:border-ice-400 hover:shadow-[0_0_15px_rgba(56,189,248,0.3)] bg-midnight-950 transition-all"
                                     content={
                                         <div className="text-center">
                                             <div className="font-bold text-ice-300 text-sm mb-1">{item.name}</div>
@@ -327,7 +323,7 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                                         </div>
                                     }
                                 >
-                                    <div className="w-16 h-16 flex items-center justify-center text-3xl cursor-help relative p-1">
+                                    <div className="w-full h-full flex items-center justify-center text-2xl md:text-3xl cursor-help relative p-1">
                                         <GameIcon 
                                             glossaryId={item.glossaryId}
                                             alt={item.name}
@@ -342,7 +338,7 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                                     </div>
                                 </SmartTooltip>
                             )) : (
-                                <div className="col-span-5 py-6 text-center text-sm text-slate-600 italic border border-dashed border-white/5 rounded-xl bg-white/[0.01]">
+                                <div className="col-span-full py-6 text-center text-sm text-slate-600 italic border border-dashed border-white/5 rounded-xl bg-white/[0.01]">
                                     Пусто
                                 </div>
                             )}
@@ -350,7 +346,7 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                     </div>
 
                     {/* Right: Effects - Takes remaining space */}
-                    <div className="flex-1 min-w-0">
+                    <div className="w-full flex-1">
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-4">
                             <Sparkles className="w-4 h-4 text-emerald-400" /> Активные Эффекты
                         </h3>
@@ -398,8 +394,8 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
             </div>
 
             {/* === BLOCK 2: HISTORY (Full Width) === */}
-            <div className="bg-midnight-900/40 backdrop-blur-md border border-white/5 rounded-3xl p-6 min-h-[400px]">
-                <div className="flex justify-between items-end mb-6 border-b border-white/5 pb-4">
+            <div className="bg-midnight-900/40 backdrop-blur-md border border-white/5 rounded-3xl p-4 md:p-6 min-h-[400px]">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 border-b border-white/5 pb-4 gap-2">
                     <div>
                         <h3 className="text-xl font-bold text-white tracking-wide flex items-center gap-2">
                             История Игр
@@ -422,13 +418,13 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                             const isReroll = r.includes('reroll') || r.includes('реролл');
                             
                             return (
-                                <div key={i} className="flex gap-6 p-6 rounded-2xl bg-midnight-950/50 hover:bg-midnight-800/60 border border-white/5 hover:border-white/10 transition-all group relative overflow-hidden">
+                                <div key={i} className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl bg-midnight-950/50 hover:bg-midnight-800/60 border border-white/5 hover:border-white/10 transition-all group relative overflow-hidden">
                                     
                                     {/* Status Line */}
                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${isWin ? 'bg-emerald-500' : isDrop ? 'bg-rose-500' : isReroll ? 'bg-violet-500' : 'bg-slate-700'}`}></div>
 
-                                    {/* Game Icon */}
-                                    <div className="w-20 h-24 flex-shrink-0 bg-gradient-to-br from-midnight-800 to-midnight-950 rounded-lg border border-white/5 flex items-center justify-center text-slate-600 group-hover:text-ice-400 transition-colors relative z-10 ml-2">
+                                    {/* Game Icon - Mobile: Hidden/Smaller? Keep it but adjust margin */}
+                                    <div className="w-16 h-20 sm:w-20 sm:h-24 flex-shrink-0 bg-gradient-to-br from-midnight-800 to-midnight-950 rounded-lg border border-white/5 flex items-center justify-center text-slate-600 group-hover:text-ice-400 transition-colors relative z-10 ml-2">
                                         <ImageIcon className="w-8 h-8 opacity-40" />
                                     </div>
 
@@ -436,8 +432,8 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                                     <div className="flex-1 min-w-0 flex flex-col relative z-10">
                                         
                                         {/* Header Row with Steam Button */}
-                                        <div className="flex flex-wrap items-center gap-4 mb-2">
-                                            <div className="text-xl font-bold text-slate-100 group-hover:text-white transition-colors break-words leading-tight max-w-full">
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-2">
+                                            <div className="text-lg sm:text-xl font-bold text-slate-100 group-hover:text-white transition-colors break-words leading-tight max-w-full">
                                                 {h.game}
                                             </div>
                                             
@@ -456,7 +452,7 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                                         </div>
                                         
                                         {/* Meta Row */}
-                                        <div className="flex flex-wrap items-center gap-3 mb-3 text-sm">
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3 text-sm">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider border ${
                                                 isWin ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                 isDrop ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
@@ -465,11 +461,11 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                                             }`}>
                                                 {h.result}
                                             </span>
-                                            <span className="text-slate-600">|</span>
+                                            <span className="text-slate-600 hidden sm:inline">|</span>
                                             {h.time && h.time !== '-' && (
                                                 <>
                                                     <span className="text-slate-400 font-mono text-xs">{h.time}</span>
-                                                    <span className="text-slate-600">|</span>
+                                                    <span className="text-slate-600 hidden sm:inline">|</span>
                                                 </>
                                             )}
                                             <span className="flex items-center gap-1.5 text-slate-500 font-mono">
@@ -479,7 +475,7 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                                             {/* Score Display */}
                                             {h.score !== undefined && (
                                                 <>
-                                                    <span className="text-slate-600">|</span>
+                                                    <span className="text-slate-600 hidden sm:inline">|</span>
                                                     <span className="flex items-center gap-1.5 font-mono text-xs font-bold">
                                                         <Star size={12} className="text-slate-500" />
                                                         <span className={getScoreColor(h.score)}>{h.score}/10</span>
@@ -490,7 +486,7 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
 
                                         {/* Comment */}
                                         {h.comment && (
-                                            <div className="text-base text-slate-400 italic font-light leading-relaxed mt-1">
+                                            <div className="text-sm sm:text-base text-slate-400 italic font-light leading-relaxed mt-1">
                                                 "{h.comment}"
                                             </div>
                                         )}

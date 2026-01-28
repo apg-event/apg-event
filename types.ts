@@ -104,11 +104,13 @@ export interface GameState {
 // Glossary Types
 export type GlossaryCategory = 'Rules' | 'Wheel';
 export type WheelSubCategory = 'Items' | 'Events' | 'Traps';
+export type RulesSubCategory = 'Viewers' | 'Streamers';
 
 export interface GlossaryEntry {
   id: string;
   title: string;
   category: GlossaryCategory;
-  subcategory?: WheelSubCategory; // Only for Wheel category
+  subcategory?: WheelSubCategory | RulesSubCategory; // Updated to include Rules subcategories
   description: string;
+  isPositive?: boolean; // If true = Green, false = Red, undefined = Category Default
 }
