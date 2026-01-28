@@ -16,7 +16,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
   const navItems = [
     // { id: 'map', label: 'Карта', icon: Map },
     // { id: 'profiles', label: 'Участники', icon: Users },
-    { id: 'glossary', label: 'Глоссарий', icon: Book },
+    { id: 'glossary', label: 'Правила', icon: Book },
   ];
 
   // Sort ALL players for leaderboard
@@ -104,6 +104,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         </nav>
 
         {/* Leaderboard (Fills remaining space and scrolls) */}
+        { false && (
         <div className="flex-1 flex flex-col min-h-0 border-t border-white/5 bg-midnight-950/30">
           <div className="p-5 pb-3 flex justify-between items-center">
             {/* GOLDEN HEADER */}
@@ -182,7 +183,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
               </div>
             ))}
           </div>
-        </div>
+        </div> )}
       </aside>
 
       {/* Main Content Wrapper */}
