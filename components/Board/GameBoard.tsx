@@ -184,7 +184,7 @@ const getMoscowSunConfig = (): SunConfig => {
     };
 };
 
-const DynamicLighting = ({ config }: { config: SunConfig }) => {
+const DynamicLighting = ({ config, isMobile }: { config: SunConfig, isMobile: boolean }) => {
     // Update background/fog color
     const { scene } = useThree();
     useEffect(() => {
@@ -194,6 +194,9 @@ const DynamicLighting = ({ config }: { config: SunConfig }) => {
         }
     }, [config.fogColor, scene]);
 
+    // OPTIMIZATION: Smaller shadow map on mobile
+    const shadowMapSize = isMobile ? 1024 : 2048;
+
     return (
         <group>
              {/* Main Sun/Moon */}
@@ -202,7 +205,7 @@ const DynamicLighting = ({ config }: { config: SunConfig }) => {
                 intensity={config.intensity} 
                 color={config.color} 
                 castShadow 
-                shadow-mapSize={[2048, 2048]}
+                shadow-mapSize={[shadowMapSize, shadowMapSize]}
                 shadow-bias={-0.0005}
             />
             {/* Ambient Fill */}
@@ -225,8 +228,7 @@ const DynamicLighting = ({ config }: { config: SunConfig }) => {
 
 // --- 3D COMPONENTS ---
 
-const SnowSystem = () => {
-    const count = 15000; 
+const SnowSystem = ({ count = 15000 }: { count?: number }) => {
     const mesh = useRef<any>(null);
     
     const particles = useMemo(() => {
@@ -280,9 +282,9 @@ const SnowSystem = () => {
     });
 
     return (
-        <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
+        <instancedMesh ref={mesh} args={[undefined, undefined, count]} frustumCulled={false}>
             <octahedronGeometry args={[1, 0]} /> 
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.6} depthWrite={false} />
         </instancedMesh>
     );
 };
@@ -739,6 +741,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
   const [sunConfig, setSunConfig] = useState<SunConfig>(getMoscowSunConfig());
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
+  // OPTIMIZATION: Mobile Detection
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+        // Simple check for screen width or user agent
+        const mobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        setIsMobile(mobile);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Sync focused player from sidebar with selected player in 3D
   useEffect(() => {
     if (focusedPlayerId) {
@@ -777,17 +793,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
       <Canvas 
         shadows 
         camera={{ position: [-50, 150, 150], fov: 45 }} 
-        dpr={[1, 1.5]} 
-        gl={{ toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.2 }} 
+        // OPTIMIZATION: Cap DPR on mobile to 1 to prevent overheating and OOM
+        dpr={isMobile ? 1 : [1, 1.5]}
+        gl={{ 
+            toneMapping: THREE.ReinhardToneMapping, 
+            toneMappingExposure: 1.2,
+            // OPTIMIZATION: Helps with performance
+            powerPreference: "high-performance",
+            preserveDrawingBuffer: false,
+        }} 
         // Stop event propagation to allow clicking through UI if needed, but important for 3D clicks
         onPointerMissed={() => setSelectedPlayerId(null)}
       >
-        <DynamicLighting config={sunConfig} />
+        <DynamicLighting config={sunConfig} isMobile={isMobile} />
         
+        {/* OPTIMIZATION: Reduce environment intensity or disable presets if needed, but 'city' is usually cached well */}
         <Environment preset="city" environmentIntensity={0} />
 
         <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-        <SnowSystem />
+        
+        {/* OPTIMIZATION: Reduce snow count on mobile */}
+        <SnowSystem count={isMobile ? 3000 : 15000} />
 
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -10, 0]} receiveShadow>
             <planeGeometry args={[10000, 10000]} />
@@ -802,7 +828,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
         
         <CameraController focusedPlayerId={focusedPlayerId} players={players} nodes={nodes} />
 
-        <TerrainModel />
+        <TerrainModel isMobile={isMobile} />
         
         {nodes && <InteractiveTiles nodes={nodes} />}
 
@@ -825,10 +851,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
             })}
         </group>
 
-        <EffectComposer enableNormalPass={false}>
-            <Bloom luminanceThreshold={1.5} mipmapBlur intensity={0.05} radius={0.4} />
-            <Vignette eskil={false} offset={0.1} darkness={0.8} />
-        </EffectComposer>
+        {/* OPTIMIZATION: Disable EffectComposer (Bloom/Vignette) on Mobile entirely */}
+        {!isMobile && (
+            <EffectComposer enableNormalPass={false}>
+                <Bloom luminanceThreshold={1.5} mipmapBlur intensity={0.05} radius={0.4} />
+                <Vignette eskil={false} offset={0.1} darkness={0.8} />
+            </EffectComposer>
+        )}
 
       </Canvas>
       
