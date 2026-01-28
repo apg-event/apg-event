@@ -92,22 +92,16 @@ const getMoscowSunConfig = (): SunConfig => {
     const now = new Date();
     const nowMs = now.getTime();
 
-    // Use Intl.DateTimeFormat for reliable parsing across all browsers/locales
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Europe/Moscow',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: false
-    });
+    // --- MATH BASED TIME CALCULATION (UTC+3) ---
+    // Moscow is UTC+3. We calculate purely using numbers to avoid browser localization issues.
+    // This ensures lighting works consistently on all devices/browsers without parsing strings.
+    const utcHours = now.getUTCHours();
+    const utcMinutes = now.getUTCMinutes();
     
-    const parts = formatter.formatToParts(now);
-    const hourPart = parts.find(p => p.type === 'hour');
-    const minutePart = parts.find(p => p.type === 'minute');
-    
-    const hours = hourPart ? parseInt(hourPart.value, 10) : 12;
-    const minutes = minutePart ? parseInt(minutePart.value, 10) : 0;
-    
-    const timeFloat = hours + minutes / 60;
+    let mskHours = utcHours + 3;
+    if (mskHours >= 24) mskHours -= 24;
+
+    const timeFloat = mskHours + utcMinutes / 60;
 
     // UI Display String
     const displayTime = now.toLocaleTimeString("ru-RU", {
@@ -152,7 +146,7 @@ const getMoscowSunConfig = (): SunConfig => {
     // DAY (06:00 - 18:00)
     const dayProgress = (timeFloat - 6) / 12; // 0 at 6am, 1 at 6pm
     
-    // Calculate Sun Arc
+    // Calculate Sun Arc using Math.cos/sin for a perfect curve
     const angle = dayProgress * Math.PI; // 0 to PI
     const x = -Math.cos(angle) * SUN_DISTANCE; 
     const y = Math.sin(angle) * SUN_DISTANCE * 0.8; // Height
