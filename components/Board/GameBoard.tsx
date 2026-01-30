@@ -249,7 +249,7 @@ const GPUSnowSystem = ({ count = 5000 }: { count?: number }) => {
 
         for (let i = 0; i < count; i++) {
             positions[i * 3] = (Math.random() - 0.5) * 600; // X
-            positions[i * 3 + 1] = Math.random() * 200;     // Y (initial)
+            positions[i * 3 + 1] = Math.random() * 400;     // Y (initial)
             positions[i * 3 + 2] = (Math.random() - 0.5) * 600; // Z
 
             speeds[i] = 10 + Math.random() * 20; // Falling speed
@@ -269,7 +269,7 @@ const GPUSnowSystem = ({ count = 5000 }: { count?: number }) => {
 
     const uniforms = useMemo(() => ({
         uTime: { value: 0 },
-        uHeight: { value: 200.0 }
+        uHeight: { value: 500.0 }
     }), []);
 
     useFrame((state) => {

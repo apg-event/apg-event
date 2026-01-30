@@ -1,5 +1,5 @@
 import React from 'react';
-import { Map, Book, Users, Menu, X, Snowflake, Trophy, Heart, Wind } from 'lucide-react';
+import { Map, Book, Users, Menu, X, Trophy, Heart, Wind } from 'lucide-react';
 import { Player } from '../types';
 
 interface LayoutProps {
@@ -49,7 +49,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
       {/* Mobile Header (Fixed Height: h-16 / 64px) */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 z-50 bg-midnight-900/90 backdrop-blur-xl border-b border-white/10 flex justify-between items-center px-4 shadow-lg">
         <div className="flex items-center gap-2 font-bold text-lg text-ice-300">
-           <Snowflake className="text-ice-400 animate-spin-slow w-6 h-6" /> 
+           <img src="/assets/apg_logo.png" alt="Snowflake" className="w-6 h-6 animate-spin-slow object-contain" /> 
            <span className="tracking-wider">APG <span className="text-white">EVENT</span></span>
         </div>
         <button 
@@ -73,7 +73,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
         <div className="p-6 hidden md:flex items-center gap-3 font-bold text-2xl tracking-wider flex-shrink-0 text-white">
            <div className="relative w-10 h-10 flex items-center justify-center">
              <div className="absolute inset-0 bg-ice-500 blur-lg opacity-40 rounded-full animate-pulse-slow"></div>
-             <Snowflake className="relative text-ice-300 w-8 h-8" />
+             <img src="/assets/apg_logo.png" alt="Snowflake" className="relative w-8 h-8 object-contain" />
            </div>
            <span className="text-transparent bg-clip-text bg-gradient-to-r from-ice-300 to-white">APG EVENT</span>
         </div>
