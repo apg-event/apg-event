@@ -54,7 +54,7 @@ export function TerrainModel({ isMobile = false }: { isMobile?: boolean }) {
   // Configure loader with KTX2 support using CDN transcoder
   const { nodes, scene } = useGLTF('./assets/map_done2.glb', true, undefined, (loader) => {
       const ktx2Loader = new KTX2Loader();
-      ktx2Loader.setTranscoderPath('https://cdn.jsdelivr.net/gh/pmndrs/drei-assets@master/basis/');
+      ktx2Loader.setTranscoderPath('/basis/');
       ktx2Loader.detectSupport(gl);
       loader.setKTX2Loader(ktx2Loader);
   }) as any;

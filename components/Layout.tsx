@@ -14,8 +14,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
   const [isSidebarOpen, setSidebarOpen] = React.useState(false);
 
   const navItems = [
-    // { id: 'map', label: 'Карта', icon: Map },
-    // { id: 'profiles', label: 'Участники', icon: Users },
+    { id: 'map', label: 'Карта', icon: Map },
+    { id: 'profiles', label: 'Участники', icon: Users },
     { id: 'glossary', label: 'Правила', icon: Book },
   ];
 
