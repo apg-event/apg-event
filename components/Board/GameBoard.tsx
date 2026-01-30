@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Text, Billboard, Stars, Float, useGLTF, Environment, Html } from '@react-three/drei';
+import { OrbitControls, Text, Billboard, Stars, Float, useGLTF, Html } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { getSectorInfo } from '../../constants';
@@ -789,7 +789,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
             onPointerMissed={() => setSelectedPlayerId(null)}
         >
             <DynamicLighting config={sunConfig} isMobile={isMobile} />
-            <Environment preset="city" environmentIntensity={0} />
 
             <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
             
