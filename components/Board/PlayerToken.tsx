@@ -1,5 +1,6 @@
 import React from 'react';
 import { Player } from '../../types';
+import { PlayerAvatar } from '../UI/PlayerAvatar';
 
 interface PlayerTokenProps {
   player: Player;
@@ -27,7 +28,11 @@ export const PlayerToken: React.FC<PlayerTokenProps> = ({ player }) => {
             boxShadow: `0 0 30px ${player.color}60, inset 0 0 20px rgba(0,0,0,0.5)` 
         }}
       >
-        <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" />
+        <PlayerAvatar 
+          src={player.avatarUrl} 
+          name={player.name}
+          className="w-full h-full object-cover" 
+        />
         
         {/* Frost Overlay */}
         <div className="absolute inset-0 bg-gradient-to-tr from-ice-300/20 to-transparent pointer-events-none"></div>

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { getSectorInfo } from '../../constants';
 import { Player } from '../../types';
 import { TerrainModel } from './TerrainModel';
-import { MousePointer2, X, Sun, Moon, Heart, Package, Sparkles as SparklesIcon, Clock } from 'lucide-react';
+import { MousePointer2, X, Sun, Moon, Heart, Package, Sparkles as SparklesIcon, Clock, ExternalLink } from 'lucide-react';
 import { GameIcon } from '../UI/GameIcon';
 
 // --- HELPERS ---
@@ -309,7 +309,21 @@ const PlayerTooltip = ({ player, rank, onClose }: { player: Player, rank: number
                         <X size={16} />
                     </button>
                     <div className="px-4 py-3 bg-white/5 border-b border-white/10">
-                        <div className="font-bold text-lg text-white mb-1 truncate">{player.name}</div>
+                        {player.twitchUsername ? (
+                            <a 
+                                href={player.twitchUsername}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-bold text-lg text-white mb-1 truncate hover:text-ice-400 transition-colors flex items-center gap-2 group/link"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {player.name}
+                                <ExternalLink size={14} className="opacity-50 group-hover/link:opacity-100 transition-opacity" />
+                            </a>
+                        ) : (
+                            <div className="font-bold text-lg text-white mb-1 truncate">{player.name}</div>
+                        )}
+                        
                         <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
                             <span className="bg-ice-500/10 px-1.5 py-0.5 rounded border border-ice-500/20 text-ice-300">#{rank} Место</span>
                             <span className="text-slate-600">|</span>

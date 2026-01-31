@@ -6,6 +6,8 @@ import {
     Zap, Shield, Skull, ExternalLink, Search, User, Tv, Star
 } from 'lucide-react';
 import { GameIcon } from '../UI/GameIcon';
+import { PlayerAvatar } from '../UI/PlayerAvatar';
+import { GameCover } from '../UI/GameCover';
 
 interface ProfileListProps {
   players: Player[];
@@ -33,10 +35,24 @@ const SmartTooltip: React.FC<SmartTooltipProps> = ({ children, content, classNam
         // Vertical Logic: If closer than 220px to top, flip to bottom
         const v = rect.top < 220 ? 'bottom' : 'top';
         
-        // Horizontal Logic: Check Sidebar (approx 300px) and Right Edge
+        // Horizontal Logic: Edge detection
+        // We check how much space is available on left and right
+        const spaceRight = winW - rect.right; // Distance from right edge of element to right edge of screen
+        const spaceLeft = rect.left;          // Distance from left edge of screen to left edge of element
+        
         let h: 'left' | 'center' | 'right' = 'center';
-        if (rect.left < 320) h = 'left';
-        else if (rect.right > winW - 240) h = 'right';
+
+        // 1. Priority check for Right Edge overflow
+        // If we have less than ~120px (half tooltip width) on the right, align RIGHT (grow left)
+        if (spaceRight < 120) {
+            h = 'right';
+        } 
+        // 2. Priority check for Left Edge overflow
+        // If we have less than ~120px on the left, align LEFT (grow right)
+        else if (spaceLeft < 120) {
+            h = 'left';
+        }
+        // 3. Otherwise Center
 
         setPos({ v, h });
     };
@@ -186,7 +202,11 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                     `}
                 >
                     <div className={`relative w-6 h-6 rounded-full overflow-hidden border ${selectedId === player.id ? 'border-ice-400' : 'border-white/10'}`}>
-                        <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        <PlayerAvatar 
+                            src={player.avatarUrl} 
+                            name={player.name}
+                            className="w-full h-full object-cover" 
+                        />
                         {player.isLive && (
                            <span className="absolute bottom-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-black animate-pulse"></span>
                         )}
@@ -205,7 +225,7 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
         <div className="max-w-[1600px] mx-auto p-4 lg:p-8 space-y-6">
 
             {/* === BLOCK 1: HERO CARD (Info, Stats, Inventory, Effects) === */}
-            <div className="bg-midnight-900/40 backdrop-blur-md border border-white/5 rounded-3xl p-4 md:p-6 lg:p-8 shadow-xl">
+            <div className="bg-midnight-900/40 backdrop-blur-md border border-white/5 rounded-3xl p-4 md:p-6 lg:p-8 shadow-xl relative z-10">
                 
                 {/* --- TOP SECTION: Avatar, Info, HP, Stats --- */}
                 <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start mb-8">
@@ -213,7 +233,11 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                     {/* Avatar Column */}
                     <div className="flex flex-col items-center gap-4 flex-shrink-0">
                         <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-midnight-800 shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden relative group">
-                             <img src={activePlayer.avatarUrl} alt={activePlayer.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                             <PlayerAvatar 
+                                src={activePlayer.avatarUrl} 
+                                name={activePlayer.name}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                             />
                              {activePlayer.isDead && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Skull className="text-white/50 w-12 h-12" /></div>}
                         </div>
                         
@@ -311,7 +335,8 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-4">
                             <Package className="w-4 h-4 text-amber-400" /> Инвентарь
                         </h3>
-                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                        {/* CHANGED: grid-cols-5 always, reduced gap on mobile */}
+                        <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
                             {activePlayer.inventory.length > 0 ? activePlayer.inventory.map(item => (
                                 <SmartTooltip 
                                     key={item.id}
@@ -323,7 +348,8 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                                         </div>
                                     }
                                 >
-                                    <div className="w-full h-full flex items-center justify-center text-2xl md:text-3xl cursor-help relative p-1">
+                                    {/* CHANGED: Adjusted text sizes for mobile adaptation */}
+                                    <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl md:text-3xl cursor-help relative p-1">
                                         <GameIcon 
                                             glossaryId={item.glossaryId}
                                             alt={item.name}
@@ -423,10 +449,11 @@ export const ProfileList: React.FC<ProfileListProps> = ({ players }) => {
                                     {/* Status Line */}
                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${isWin ? 'bg-emerald-500' : isDrop ? 'bg-rose-500' : isReroll ? 'bg-violet-500' : 'bg-slate-700'}`}></div>
 
-                                    {/* Game Icon - Mobile: Hidden/Smaller? Keep it but adjust margin */}
-                                    <div className="w-16 h-20 sm:w-20 sm:h-24 flex-shrink-0 bg-gradient-to-br from-midnight-800 to-midnight-950 rounded-lg border border-white/5 flex items-center justify-center text-slate-600 group-hover:text-ice-400 transition-colors relative z-10 ml-2">
-                                        <ImageIcon className="w-8 h-8 opacity-40" />
-                                    </div>
+                                    {/* Game Cover (Fetched from RAWG) */}
+                                    <GameCover
+                                        gameName={h.game}
+                                        className="w-16 h-20 sm:w-20 sm:h-24 flex-shrink-0 rounded-lg border border-white/5 relative z-10 ml-2 overflow-hidden bg-midnight-900 shadow-md group-hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                                    />
 
                                     {/* Content */}
                                     <div className="flex-1 min-w-0 flex flex-col relative z-10">

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { GLOSSARY_DATA } from '../../data/glossaryData';
 import { GlossaryCategory, WheelSubCategory, RulesSubCategory } from '../../types';
-import { Search, Dices, BookOpen, Package, Zap, Skull, Image as ImageIcon, Users, Gamepad2 } from 'lucide-react';
+import { Search, Dices, BookOpen, Package, Zap, Skull, Image as ImageIcon, Users, Gamepad2, ArrowUp } from 'lucide-react';
 
 // --- HELPER: Simple Markdown Parser ---
 // Handles:
@@ -59,6 +59,22 @@ export const GlossaryView: React.FC = () => {
   
   // Unified subcategory state. 'All' works for both categories.
   const [activeSubCategory, setActiveSubCategory] = useState<WheelSubCategory | RulesSubCategory | 'All'>('All');
+
+  // Scroll Logic
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = () => {
+      if (scrollContainerRef.current) {
+          const { scrollTop } = scrollContainerRef.current;
+          // Show button after scrolling down 300px
+          setShowScrollTop(scrollTop > 300);
+      }
+  };
+
+  const scrollToTop = () => {
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Filter Logic
   const filteredEntries = GLOSSARY_DATA.filter(entry => {
@@ -145,7 +161,7 @@ export const GlossaryView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0B0C15] overflow-hidden">
+    <div className="flex flex-col h-full bg-[#0B0C15] overflow-hidden relative">
         
         {/* --- HEADER SECTION --- */}
         <div className="flex-shrink-0 p-4 md:p-8 pb-4 border-b border-white/5 bg-midnight-950/50 backdrop-blur-xl z-20">
@@ -217,8 +233,12 @@ export const GlossaryView: React.FC = () => {
         </div>
 
         {/* --- CONTENT SECTION --- */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
-            <div className="max-w-6xl mx-auto min-h-full">
+        <div 
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8"
+        >
+            <div className="max-w-6xl mx-auto min-h-full pb-20">
                 
                 {/* VIEW 1: RULES (Document Style) */}
                 {activeTab === 'Rules' && (
@@ -334,6 +354,19 @@ export const GlossaryView: React.FC = () => {
 
             </div>
         </div>
+
+        {/* --- SCROLL TO TOP BUTTON --- */}
+        <button
+            onClick={scrollToTop}
+            className={`
+                fixed bottom-8 right-8 z-50 p-3 rounded-full bg-ice-600 text-white shadow-[0_0_20px_rgba(56,189,248,0.4)] border border-ice-400/50
+                transition-all duration-500 transform hover:scale-110 hover:bg-ice-500 active:scale-95
+                ${showScrollTop ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}
+            `}
+            title="Наверх"
+        >
+            <ArrowUp size={24} className="animate-pulse" />
+        </button>
     </div>
   );
 };

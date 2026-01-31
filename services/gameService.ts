@@ -74,7 +74,7 @@ const parseLitePlayer = (id: string, data: any): LitePlayerData => {
   return {
     id: String(data.id || id),
     name,
-    avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}&backgroundColor=b6e3f4`,
+    avatarUrl: `./assets/avatars/${name}.png`,
     color: stringToColor(name),
     position: position > 100 ? 100 : position < 1 ? 1 : position,
     hp,
@@ -216,7 +216,7 @@ export const useGameData = () => {
       fetchLiteState();
     }
 
-    const interval = setInterval(fetchLiteState, 5 * 60 * 1000); // 5 Minutes
+    const interval = setInterval(fetchLiteState, 1 * 60 * 1000); // 5 Minutes
     return () => clearInterval(interval);
   }, []); 
 

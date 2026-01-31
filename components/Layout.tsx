@@ -1,6 +1,7 @@
 import React from 'react';
 import { Map, Book, Users, Menu, X, Trophy, Heart, Wind } from 'lucide-react';
 import { Player } from '../types';
+import { PlayerAvatar } from './UI/PlayerAvatar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -132,7 +133,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
                  
                  {/* Rank & Avatar */}
                  <div className="relative w-10 h-10 flex-shrink-0">
-                    <img src={p.avatarUrl} className="w-full h-full rounded-full border border-white/10 object-cover shadow-lg" alt={p.name} />
+                    <PlayerAvatar 
+                      src={p.avatarUrl} 
+                      name={p.name}
+                      className="w-full h-full rounded-full border border-white/10 object-cover shadow-lg" 
+                    />
                     <div className={`
                         absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border border-white/10 shadow-md
                         ${idx === 0 
@@ -182,6 +187,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
                  </div>
               </div>
             ))}
+          </div>
+
+          {/* Credits Footer */}
+          <div className="p-3 border-t border-white/5 text-center bg-midnight-950/30">
+             <span className="text-[10px] text-slate-600 font-mono tracking-wide">
+                made by  <a href="https://t.me/kpingulya" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-ice-400 transition-colors font-bold">муляка</a> & <a href="https://twitch.tv/gamelxrd" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-ice-400 transition-colors font-bold">gamelxrd</a>
+             </span>
           </div>
         </div>  )}
       </aside>
