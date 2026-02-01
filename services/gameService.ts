@@ -3,10 +3,11 @@ import { Player, GameState, PlayerStatus, InventoryItem, MatchHistory, PlayerEff
 import { INITIAL_PLAYERS } from '../constants';
 import { checkTwitchStatus, getTwitchUrl, TwitchStatus } from './twitchService';
 import { getDescriptionByName, getGlossaryIdByName } from '../data/glossaryData';
+import { PLAYER_COLORS } from '../data/playerCustomization';
 
 // БАЗОВЫЙ URL (без .json на конце)
-const FIREBASE_BASE_URL = "https://testaucproject-default-rtdb.europe-west1.firebasedatabase.app";
-const FIREBASE_HISTORY_URL = "https://historytestauc-default-rtdb.europe-west1.firebasedatabase.app";
+const FIREBASE_BASE_URL = "https://apglive-76b43-default-rtdb.firebaseio.com";
+const FIREBASE_HISTORY_URL = "https://apghistory-default-rtdb.firebaseio.com";
 
 // Keys for LocalStorage
 const STORAGE_KEY_LITE = 'rgg_event_lite_v1';
@@ -24,6 +25,7 @@ const parseLitePlayer = (id: string, data: any): LitePlayerData => {
   const hp = Number(data.hp ?? 100);
   const maxHp = Number(data.maxHp ?? 100);
   const isDead = Boolean(data.isDead);
+  const idString = String(data.id || id);
 
   // Status & Effects mapping
   let status = PlayerStatus.ACTIVE;
@@ -71,11 +73,14 @@ const parseLitePlayer = (id: string, data: any): LitePlayerData => {
     }));
   }
 
+  // COLOR LOGIC: Check Custom Config -> fallback to Auto Generator
+  const color = PLAYER_COLORS[idString] || PLAYER_COLORS[name] || stringToColor(name);
+
   return {
-    id: String(data.id || id),
+    id: idString,
     name,
     avatarUrl: `./assets/avatars/${name}.png`,
-    color: stringToColor(name),
+    color: color,
     position: position > 100 ? 100 : position < 1 ? 1 : position,
     hp,
     maxHp,

@@ -102,9 +102,9 @@ const getMoscowSunConfig = (): SunConfig => {
         minute: '2-digit'
     });
 
-    let eventStatus = "WIP";
+    let eventStatus = "СТАРТ 2 ФЕВРАЛЯ В 18:00";
     if (nowMs >= END_TIMESTAMP) eventStatus = "ФИНИШ";
-    else if (nowMs < START_TIMESTAMP) eventStatus = "WIP";
+    else if (nowMs < START_TIMESTAMP) eventStatus = "СТАРТ 2 ФЕВРАЛЯ В 18:00";
     else {
         const diff = nowMs - START_TIMESTAMP;
         const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;

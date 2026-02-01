@@ -8,7 +8,7 @@ import { useGameData } from './services/gameService';
 import { useProgress } from '@react-three/drei';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('glossary');
+  const [activeTab, setActiveTab] = useState('map');
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const { players, gameState } = useGameData();
   
