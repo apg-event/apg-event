@@ -72,8 +72,8 @@ const getPlayerPosition3D = (nodes: any, tileId: number): THREE.Vector3 => {
 // --- DYNAMIC SUN SYSTEM (MSK TIME) ---
 // (Logic unchanged, only shadows removed)
 
-const START_TIMESTAMP = Date.UTC(2026, 1, 2, 13, 0, 0); 
-const END_TIMESTAMP = Date.UTC(2026, 1, 16, 16, 0, 0);
+const START_TIMESTAMP = Date.UTC(2026, 1, 2, 15, 0, 0); 
+const END_TIMESTAMP = Date.UTC(2026, 1, 16, 15, 0, 0);
 
 interface SunConfig {
     position: [number, number, number];
