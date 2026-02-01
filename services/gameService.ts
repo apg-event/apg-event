@@ -5,9 +5,8 @@ import { checkTwitchStatus, getTwitchUrl, TwitchStatus } from './twitchService';
 import { getDescriptionByName, getGlossaryIdByName } from '../data/glossaryData';
 import { PLAYER_COLORS } from '../data/playerCustomization';
 
-// БАЗОВЫЙ URL (без .json на конце)
-const FIREBASE_BASE_URL = "https://apglive-76b43-default-rtdb.firebaseio.com";
-const FIREBASE_HISTORY_URL = "https://apghistory-default-rtdb.firebaseio.com";
+const FIREBASE_BASE_URL = import.meta.env.VITE_FIREBASE_BASE_URL || "";
+const FIREBASE_HISTORY_URL = import.meta.env.VITE_FIREBASE_HISTORY_URL || "";
 
 // Keys for LocalStorage
 const STORAGE_KEY_LITE = 'rgg_event_lite_v1';

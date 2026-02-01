@@ -45,6 +45,8 @@ interface ImportMetaEnv {
   readonly VITE_TWITCH_CLIENT_ID: string;
   readonly VITE_TWITCH_CLIENT_SECRET: string;
   readonly VITE_RAWG_API_KEY: string;
+  readonly VITE_FIREBASE_BASE_URL: string;
+  readonly VITE_FIREBASE_HISTORY_URL: string;
   readonly [key: string]: string | boolean | undefined;
 }
 
