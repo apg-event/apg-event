@@ -39,3 +39,15 @@ declare module '*.bmp' {
   const content: string;
   export default content;
 }
+
+// Vite Environment Variables
+interface ImportMetaEnv {
+  readonly VITE_TWITCH_CLIENT_ID: string;
+  readonly VITE_TWITCH_CLIENT_SECRET: string;
+  readonly VITE_RAWG_API_KEY: string;
+  readonly [key: string]: string | boolean | undefined;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}

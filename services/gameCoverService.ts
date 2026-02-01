@@ -1,6 +1,6 @@
 
 // RAWG API CONFIGURATION
-const API_KEY = '683af2661f5b4c07b15a04877441a673';
+const API_KEY = import.meta.env.VITE_RAWG_API_KEY || '';
 const BASE_URL = 'https://api.rawg.io/api/games';
 
 // LocalStorage Key
@@ -37,6 +37,11 @@ let memoryCache: CoverCache = loadCache();
 
 export const getGameCoverUrl = async (gameName: string): Promise<string | null> => {
     if (!gameName || gameName.length < 2) return null;
+
+    if (!API_KEY) {
+        console.warn("RAWG API Key is missing.");
+        return null;
+    }
 
     const normalizedKey = gameName.trim().toLowerCase();
 

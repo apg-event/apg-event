@@ -1,6 +1,6 @@
 // --- CONFIGURATION ---
-const CLIENT_ID = 'n4o3cf4pibix11jq1ttiezb6i6vdng';
-const CLIENT_SECRET = 'ezemgj15le807f63lk6f11wmki32vc'; // WARNING: Exposed on client side. Only for closed event use.
+const CLIENT_ID = import.meta.env.VITE_TWITCH_CLIENT_ID || '';
+const CLIENT_SECRET = import.meta.env.VITE_TWITCH_CLIENT_SECRET || ''; 
 
 // Internal cache for the access token
 let accessToken: string | null = null;
@@ -15,6 +15,11 @@ export interface TwitchStatus {
  * Get App Access Token (Client Credentials Flow)
  */
 const getAccessToken = async (): Promise<string | null> => {
+
+    if (!CLIENT_ID || !CLIENT_SECRET) {
+        console.warn("Twitch API keys are missing in environment variables.");
+        return null;
+    }
     // Return cached token if valid
     if (accessToken && Date.now() < tokenExpiry) {
         return accessToken;

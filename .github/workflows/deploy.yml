@@ -39,6 +39,10 @@ jobs:
 
       - name: Build project
         run: npm run build
+        env:
+          VITE_TWITCH_CLIENT_ID: ${{ secrets.VITE_TWITCH_CLIENT_ID }}
+          VITE_TWITCH_CLIENT_SECRET: ${{ secrets.VITE_TWITCH_CLIENT_SECRET }}
+          VITE_RAWG_API_KEY: ${{ secrets.VITE_RAWG_API_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
