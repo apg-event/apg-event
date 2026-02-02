@@ -715,6 +715,13 @@ const CameraController = ({
             controls.maxPolarAngle = Math.PI / 2.05; 
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
+            // LEFT Mouse = PAN
+            // RIGHT Mouse = ROTATE
+            controls.mouseButtons = {
+                LEFT: THREE.MOUSE.PAN,
+                MIDDLE: THREE.MOUSE.DOLLY,
+                RIGHT: THREE.MOUSE.ROTATE
+            };
         }
     }, [isAnimating]);
 
@@ -898,9 +905,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
           </div>
 
           <div className="hidden md:flex bg-black/50 backdrop-blur-md text-white/50 text-xs px-3 py-2 rounded-lg border border-white/5 items-center gap-3">
-                <span className="flex items-center gap-1"><MousePointer2 className="w-3 h-3" /> ЛКМ - Вращение</span>
+                <span className="flex items-center gap-1"><MousePointer2 className="w-3 h-3" /> ЛКМ - Панорама</span>
                 <span className="w-px h-3 bg-white/10"></span>
-                <span>ПКМ - Панорама</span>
+                <span>ПКМ - Вращение</span>
                 <span className="w-px h-3 bg-white/10"></span>
                 <span>Колесо - Зум</span>
                 <span className="w-px h-3 bg-white/10"></span>
