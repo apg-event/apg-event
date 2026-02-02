@@ -41,6 +41,28 @@ const useSnowTexture = () => {
 const getPlayerPosition3D = (nodes: any, tileId: number): THREE.Vector3 => {
     if (!nodes) return new THREE.Vector3(0, 10, 0);
 
+    // SPECIAL CASE: Start Tile (id 0) is named "tile" in the GLB
+    if (tileId === 0) {
+        const startNode = nodes['tile'];
+        if (startNode) {
+             startNode.updateWorldMatrix(true, false);
+             
+             if (startNode.geometry) {
+                if (!startNode.geometry.boundingBox) startNode.geometry.computeBoundingBox();
+                const center = new THREE.Vector3();
+                startNode.geometry.boundingBox.getCenter(center);
+                center.applyMatrix4(startNode.matrixWorld);
+                center.y += 0.5; 
+                return center;
+             }
+
+             const pos = new THREE.Vector3();
+             startNode.getWorldPosition(pos);
+             pos.y += 0.5;
+             return pos;
+        }
+    }
+
     const suffix = tileId.toString().padStart(3, '0');
     const nodeName = `tile${suffix}`;
     
