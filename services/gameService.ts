@@ -9,8 +9,8 @@ const FIREBASE_BASE_URL = import.meta.env.VITE_FIREBASE_BASE_URL || "";
 const FIREBASE_HISTORY_URL = import.meta.env.VITE_FIREBASE_HISTORY_URL || "";
 
 // Keys for LocalStorage
-const STORAGE_KEY_LITE = 'rgg_event_lite_v1';
-const STORAGE_KEY_HISTORY = 'rgg_event_history_v1';
+const STORAGE_KEY_LITE = 'apg_event_lite_v1';
+const STORAGE_KEY_HISTORY = 'apg_event_history_v1';
 
 // Типы для внутренней логики мерджа данных
 // FIX: Added name: string to ensure TS knows name exists
@@ -20,13 +20,15 @@ type HistoryData = Record<string, MatchHistory[]>; // id -> history[]
 // Хелпер для парсинга "Легких" данных (Позиция, HP, Инвентарь)
 const parseLitePlayer = (id: string, data: any): LitePlayerData => {
   const name = data.name || `Operative ${id}`;
+
   const rawPosition = Number(data.tile || data.position || 0);
-  let position = rawPosition - 1;
+  let position = rawPosition;
 
   // Clamp to board limits
   if (position > 100) position = 100;
   // CHANGED: Allow position 0 as "Start"
   if (position < 0) position = 0;
+  
   const hp = Number(data.hp ?? 100);
   const maxHp = Number(data.maxHp ?? 100);
   const isDead = Boolean(data.isDead);
@@ -86,7 +88,7 @@ const parseLitePlayer = (id: string, data: any): LitePlayerData => {
     name,
     avatarUrl: `./assets/avatars/${name}.png`,
     color: color,
-    position: position > 100 ? 100 : position < 1 ? 1 : position,
+    position: position,
     hp,
     maxHp,
     isDead,
