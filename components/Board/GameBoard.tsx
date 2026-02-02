@@ -125,9 +125,27 @@ const getMoscowSunConfig = (): SunConfig => {
     });
 
     let eventStatus = "СТАРТ 2 ФЕВРАЛЯ В 18:00";
-    if (nowMs >= END_TIMESTAMP) eventStatus = "ФИНИШ";
-    else if (nowMs < START_TIMESTAMP) eventStatus = "СТАРТ 2 ФЕВРАЛЯ В 18:00";
-    else {
+    if (nowMs >= END_TIMESTAMP) {
+        eventStatus = "ФИНИШ";
+    } else if (nowMs < START_TIMESTAMP) {
+        // Countdown Logic
+        const diff = START_TIMESTAMP - nowMs;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        // Pad single digits for cleaner look (e.g. 05s instead of 5s)
+        const pad = (n: number) => n.toString().padStart(2, '0');
+
+        if (days > 0) {
+            eventStatus = `СТАРТ ЧЕРЕЗ: ${days}д ${hours}ч ${pad(minutes)}м`;
+        } else if (hours > 0) {
+            eventStatus = `СТАРТ ЧЕРЕЗ: ${hours}ч ${pad(minutes)}м`;
+        } else {
+             eventStatus = `СТАРТ ЧЕРЕЗ: ${minutes}м`;
+        }
+    } else {
         const diff = nowMs - START_TIMESTAMP;
         const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
         eventStatus = `День ${days}`;
