@@ -20,7 +20,13 @@ type HistoryData = Record<string, MatchHistory[]>; // id -> history[]
 // Хелпер для парсинга "Легких" данных (Позиция, HP, Инвентарь)
 const parseLitePlayer = (id: string, data: any): LitePlayerData => {
   const name = data.name || `Operative ${id}`;
-  const position = Number(data.tile || data.position || 1);
+  const rawPosition = Number(data.tile || data.position || 0);
+  let position = rawPosition - 1;
+
+  // Clamp to board limits
+  if (position > 100) position = 100;
+  // CHANGED: Allow position 0 as "Start"
+  if (position < 0) position = 0;
   const hp = Number(data.hp ?? 100);
   const maxHp = Number(data.maxHp ?? 100);
   const isDead = Boolean(data.isDead);
@@ -350,17 +356,14 @@ export const useGameData = () => {
         const gamesPlayed = history.length;
         const wins = history.filter(h => 
             (h.result || '').toLowerCase().includes('пройдено') ||
-            (h.result || '').toLowerCase().includes('win') ||
-            (h.result || '').toLowerCase().includes('pobed') ||
-            (h.result || '').toLowerCase().includes('побед') ||
-            (h.result || '').toLowerCase().includes('1')
+            (h.result || '').toLowerCase().includes('win')
         ).length;
 
         // Calculate DROPS
         // Added Cyrillic 'дроп' check
         const drops = history.filter(h => {
              const r = (h.result || '').toLowerCase();
-             return r.includes('drop') || r.includes('дроп') || r.includes('dead') || r.includes('death') || r.includes('выбыл') || r.includes('погиб') || r.includes('смерть');
+             return r.includes('drop') || r.includes('дроп');
         }).length;
 
         // Calculate REROLLS
