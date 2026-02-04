@@ -52,19 +52,19 @@ export const getSectorInfo = (id: number) => {
     text: "Игры от 10 до 30 часов (ФИНАЛ)", 
     color: "#beaa75", // Gold
   };
-  if (id >= 81) return { 
+  if (id >= 80) return { 
     text: "Игры от 8 до 14 часов", 
     color: "#ab897f", // Reddish Brown
   };
-  if (id >= 61) return { 
+  if (id >= 60) return { 
     text: "Игры от 5 до 9 часов", 
     color: "#b47f9d", // Pinkish
   };
-  if (id >= 41) return { 
+  if (id >= 40) return { 
     text: "Игры от 4 до 7 часов", 
     color: "#9b85be", // Purple
   };
-  if (id >= 21) return { 
+  if (id >= 20) return { 
     text: "Игры от 2 до 5 часов", 
     color: "#8390c5", // Indigo
   };
