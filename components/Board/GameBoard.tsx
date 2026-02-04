@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { getSectorInfo } from '../../constants';
 import { Player } from '../../types';
 import { TerrainModel } from './TerrainModel';
-import { MousePointer2, X, Sun, Moon, Heart, Package, Sparkles as SparklesIcon, Clock, ExternalLink } from 'lucide-react';
+import { MousePointer2, X, Sun, Moon, Heart, Package, Sparkles as SparklesIcon, Clock, ExternalLink, Zap, Monitor } from 'lucide-react';
 import { GameIcon } from '../UI/GameIcon';
 
 // --- HELPERS ---
@@ -797,6 +797,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Quality Settings State (Low/High) - Default from LocalStorage or false (High)
+  const [isLowQuality, setIsLowQuality] = useState<boolean>(() => {
+     try {
+         const saved = localStorage.getItem('rgg_quality_low');
+         return saved === 'true';
+     } catch (e) {
+         return false;
+     }
+  });
+
+  const toggleQuality = () => {
+      setIsLowQuality(prev => {
+          const newVal = !prev;
+          localStorage.setItem('rgg_quality_low', String(newVal));
+          return newVal;
+      });
+  };
+
   useEffect(() => {
     const checkMobile = () => {
         const mobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -836,11 +854,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
       return ranks;
   }, [players]);
 
+  // Combine Mobile detection and Manual Quality Toggle
+  const effectiveMobile = isMobile || isLowQuality;
+
   return (
     <div className="flex-1 h-full w-full relative bg-midnight-950 overflow-hidden">
         <Canvas 
             camera={{ position: [-50, 150, 150], fov: 45 }} 
-            dpr={isMobile ? 1 : [1, 1.5]}
+            dpr={effectiveMobile ? 1 : [1, 1.5]}
             gl={{ 
                 toneMapping: THREE.ReinhardToneMapping, 
                 toneMappingExposure: 1.2,
@@ -854,7 +875,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
             <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
             
             {/* GPU SNOW SYSTEM */}
-            <GPUSnowSystem count={isMobile ? 3000 : 8000} />
+            <GPUSnowSystem count={effectiveMobile ? 3000 : 8000} />
 
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -10, 0]}>
                 <planeGeometry args={[5000, 5000]} />
@@ -869,7 +890,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
             
             <CameraController focusedPlayerId={focusedPlayerId} players={players} nodes={nodes} />
 
-            <TerrainModel isMobile={isMobile} />
+            <TerrainModel isMobile={effectiveMobile} />
             
             {/* INSTANCED INTERACTIVE TILES */}
             {nodes && <InstancedInteractiveTiles nodes={nodes} />}
@@ -893,7 +914,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
                 })}
             </group>
 
-            {!isMobile && (
+            {!effectiveMobile && (
                 <EffectComposer enableNormalPass={false}>
                     <Bloom luminanceThreshold={1.5} mipmapBlur intensity={0.05} radius={0.4} />
                     <Vignette eskil={false} offset={0.1} darkness={0.8} />
@@ -904,6 +925,29 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
       
       {/* UI Overlay */}
       <div className="absolute top-4 right-4 md:top-auto md:bottom-6 md:right-6 pointer-events-none select-none flex flex-col gap-3 items-end z-30">
+
+        {/* GRAPHICS QUALITY TOGGLE (PC ONLY) */}
+          {!isMobile && (
+              <button
+                  onClick={toggleQuality}
+                  className="pointer-events-auto bg-black/60 backdrop-blur-xl border border-white/10 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-white/10 transition-colors shadow-xl group"
+                  title={isLowQuality ? "Включить высокие настройки" : "Включить режим производительности"}
+              >
+                  {isLowQuality ? (
+                      <Zap size={16} className="text-amber-400 fill-amber-400/20" />
+                  ) : (
+                      <Monitor size={16} className="text-ice-400" />
+                  )}
+                  <div className="flex flex-col items-end leading-none">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-300">Графика</span>
+                      <span className={`text-xs font-bold ${isLowQuality ? 'text-amber-400' : 'text-ice-300'}`}>
+                          {isLowQuality ? "LOW (Быстро)" : "HIGH (Красиво)"}
+                      </span>
+                  </div>
+              </button>
+          )}
+
+
           <div className="bg-black/60 backdrop-blur-xl text-white px-3 py-2 md:px-5 md:py-4 rounded-xl md:rounded-2xl border border-white/10 flex items-center gap-3 md:gap-4 w-fit animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-2xl pointer-events-auto">
               <div className="w-10 h-10 md:w-14 md:h-14 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-full border border-white/10 shadow-inner">
                  {sunConfig.isNight ? (
