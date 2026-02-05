@@ -18,6 +18,7 @@ export const PLAYER_COLORS: Record<string, string> = {
     "lady_veronio": "#a64c53",
     "nox_voice": "#7b6550",
     "SoGreyWhy": "#c7bcc6",
-    "weitrina": "#c444da"
+    "weitrina": "#c444da",
+    "red_pondaa": "#b71c1c"
     
 };
