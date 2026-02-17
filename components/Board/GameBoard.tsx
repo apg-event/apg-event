@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Text, Billboard, Stars, Float, useGLTF, Html } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -496,7 +496,7 @@ const Player3D = ({ player, nodes, stackIndex, stackSize, isSelected, onSelect, 
                     ref={meshRef} 
                     position={[0, 4, 0]} 
                     scale={[1.5, 3.0, 1.5]}
-                    onClick={(e) => {
+                    onClick={(e: ThreeEvent<MouseEvent>) => {
                         e.stopPropagation();
                         onSelect(isSelected ? null : player.id);
                     }}
@@ -643,7 +643,7 @@ const InstancedInteractiveTiles = ({ nodes }: { nodes: any }) => {
             <instancedMesh 
                 ref={meshRef} 
                 args={[undefined, undefined, tileData.positions.length]}
-                onClick={(e) => {
+                onClick={(e: ThreeEvent<MouseEvent>) => {
                     e.stopPropagation();
                     // Map instanceId to Tile ID
                     // Note: Three.js might sort instances? Usually instanceId matches index set in setMatrixAt.

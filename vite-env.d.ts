@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import { ThreeEvent } from '@react-three/fiber';
 
 import 'react';
 
