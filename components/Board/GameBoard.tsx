@@ -8,6 +8,7 @@ import { Player } from '../../types';
 import { TerrainModel } from './TerrainModel';
 import { MousePointer2, X, Sun, Moon, Heart, Package, Sparkles as SparklesIcon, Clock, ExternalLink, Zap, Monitor } from 'lucide-react';
 import { GameIcon } from '../UI/GameIcon';
+import { EventEndBanner } from '../UI/EventEndBanner';
 
 // --- HELPERS ---
 
@@ -797,6 +798,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Banner State
+  const [showEndBanner, setShowEndBanner] = useState(true);
+
   // Quality Settings State (Low/High) - Default from LocalStorage or false (High)
   const [isLowQuality, setIsLowQuality] = useState<boolean>(() => {
      try {
@@ -859,6 +863,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({ players, focusedPlayerId =
 
   return (
     <div className="flex-1 h-full w-full relative bg-midnight-950 overflow-hidden">
+
+        {/* EVENT END BANNER OVERLAY */}
+        {showEndBanner && players.length > 0 && (
+            <EventEndBanner 
+                players={players} 
+                onClose={() => setShowEndBanner(false)} 
+            />
+        )}
+
         <Canvas 
             camera={{ position: [-50, 150, 150], fov: 45 }} 
             dpr={effectiveMobile ? 1 : [1, 1.5]}

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { GLOSSARY_DATA } from '../../data/glossaryData';
 import { GlossaryCategory, WheelSubCategory, RulesSubCategory } from '../../types';
 import { Search, Dices, BookOpen, Package, Zap, Skull, Image as ImageIcon, Users, Gamepad2, ArrowUp } from 'lucide-react';
+import { GameIcon } from '../UI/GameIcon';
 
 // --- HELPER: Simple Markdown Parser ---
 // Handles:
@@ -297,25 +298,15 @@ export const GlossaryView: React.FC = () => {
                                     {/* 1:1 Icon Slot (Top Left) */}
                                     <div className="w-16 h-16 flex-shrink-0 bg-black/40 rounded-xl border border-white/10 flex items-center justify-center relative overflow-hidden group-hover:border-ice-500/20 transition-colors">
                                         
-                                        {/* 
-                                            IMAGE LOADING LOGIC:
-                                            1. Tries to load /assets/icons/{id}.png
-                                            2. If fails, hides the img and shows the fallback ImageIcon
-                                        */}
-                                        <img 
-                                            src={`/assets/icons/${entry.id}.png`} 
+                                        {/* Use GameIcon for caching support */}
+                                        <GameIcon 
+                                            glossaryId={entry.id} 
                                             alt={entry.title}
                                             className="w-full h-full object-cover p-1 z-10 relative"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                                // Find the sibling icon and show it
-                                                const fallback = e.currentTarget.parentElement?.querySelector('.fallback-icon');
-                                                if (fallback) fallback.classList.remove('hidden');
-                                            }}
+                                            fallback={
+                                                 <ImageIcon className="text-slate-600 w-6 h-6 opacity-50 absolute z-0" />
+                                            }
                                         />
-                                        
-                                        {/* Fallback Icon */}
-                                        <ImageIcon className="fallback-icon hidden text-slate-600 w-6 h-6 opacity-50 absolute z-0" />
                                         
                                         {/* Color Overlay (Tint) */}
                                         <div className={`absolute inset-0 opacity-10 pointer-events-none ${colors.bg}`}></div>

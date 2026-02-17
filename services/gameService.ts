@@ -4,31 +4,29 @@ import { INITIAL_PLAYERS } from '../constants';
 import { checkTwitchStatus, getTwitchUrl, TwitchStatus } from './twitchService';
 import { getDescriptionByName, getGlossaryIdByName } from '../data/glossaryData';
 import { PLAYER_COLORS } from '../data/playerCustomization';
-
-const FIREBASE_BASE_URL = import.meta.env.VITE_FIREBASE_BASE_URL || "";
-const FIREBASE_HISTORY_URL = import.meta.env.VITE_FIREBASE_HISTORY_URL || "";
+import { STATIC_GAMESTATE } from '../data/staticGameState';
+import { STATIC_HISTORY } from '../data/staticHistory';
 
 // Keys for LocalStorage
-const STORAGE_KEY_LITE = 'apg_event_lite_v1';
-const STORAGE_KEY_HISTORY = 'apg_event_history_v1';
+const STORAGE_KEY_HISTORY = 'rgg_event_history_v1';
 
 // Типы для внутренней логики мерджа данных
-// FIX: Added name: string to ensure TS knows name exists
 type LitePlayerData = Partial<Player> & { id: string; name: string };
 type HistoryData = Record<string, MatchHistory[]>; // id -> history[]
 
 // Хелпер для парсинга "Легких" данных (Позиция, HP, Инвентарь)
 const parseLitePlayer = (id: string, data: any): LitePlayerData => {
   const name = data.name || `Operative ${id}`;
-
+  
+  // FIX: Removed -1 offset. Using raw position directly from static file.
   const rawPosition = Number(data.tile || data.position || 0);
   let position = rawPosition;
 
   // Clamp to board limits
   if (position > 100) position = 100;
-  // CHANGED: Allow position 0 as "Start"
+  // Allow position 0 as "Start"
   if (position < 0) position = 0;
-  
+
   const hp = Number(data.hp ?? 100);
   const maxHp = Number(data.maxHp ?? 100);
   const isDead = Boolean(data.isDead);
@@ -86,7 +84,7 @@ const parseLitePlayer = (id: string, data: any): LitePlayerData => {
   return {
     id: idString,
     name,
-    avatarUrl: `./assets/avatars/${name}.png`,
+    avatarUrl: `/assets/avatars/${name}.png`,
     color: color,
     position: position,
     hp,
@@ -120,16 +118,8 @@ const getIconByName = (name: string): string => {
 };
 
 export const useGameData = () => {
-  // Инициализация из LocalStorage (если есть)
-  const [liteData, setLiteData] = useState<LitePlayerData[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_LITE);
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.warn("Failed to load lite data from storage", e);
-      return [];
-    }
-  });
+  // Инициализация из LocalStorage (если есть) - оставлено для совместимости, но перезапишется статикой
+  const [liteData, setLiteData] = useState<LitePlayerData[]>([]);
 
   const [historyData, setHistoryData] = useState<HistoryData>(() => {
     try {
@@ -141,126 +131,55 @@ export const useGameData = () => {
     }
   });
   
-  // Twitch Live Status Map: { "PlayerName": { isLive: true, category: 'Game' } }
+  // Twitch Live Status Map
   const [liveStatusData, setLiveStatusData] = useState<Record<string, TwitchStatus>>({});
 
   const [gameState, setGameState] = useState<GameState>({
     isPlaying: true,
     turnNumber: 0,
     activePlayerId: '',
-    lastEventLog: ['Инициализация соединения...']
+    lastEventLog: ['Событие завершено']
   });
 
   // Итоговый список игроков — результат слияния lite + history + twitch
   const [mergedPlayers, setMergedPlayers] = useState<Player[]>(INITIAL_PLAYERS);
 
-  // 1. IMPORTANT LOOP: Запрашиваем основное состояние (координаты, хп) каждые 5 минут
+  // 1. STATIC LOAD: Загружаем данные из файла STATIC_GAMESTATE
   useEffect(() => {
-    const fetchLiteState = async () => {
-      try {
-        const response = await fetch(`${FIREBASE_BASE_URL}/gamestate.json`);
-        
-        // FAIL-SAFE: Network Error
-        if (!response.ok) {
-            throw new Error(`Network error: ${response.status}`);
-        }
-        
-        const raw = await response.json();
-
-        // FAIL-SAFE: Empty Data or Null
-        if (!raw) {
-            throw new Error("Received empty or null data from Firebase");
-        }
-
-        let dataRoot = raw;
-        // Handle various root structures based on Unity behavior
-        if (raw.gamestate) dataRoot = raw.gamestate;
-        else if (raw.players) dataRoot = raw;
-
-        // Log parsing
-        if (dataRoot.globalLog && Array.isArray(dataRoot.globalLog)) {
-           setGameState(prev => ({
-             ...prev,
-             lastEventLog: dataRoot.globalLog.slice(-5).reverse()
-           }));
-        }
-
-        // Players parsing
-        const rawPlayers = dataRoot.players;
-        if (rawPlayers) {
-          let parsed: LitePlayerData[] = [];
-          if (Array.isArray(rawPlayers)) {
-             parsed = rawPlayers.filter(p => p !== null).map((p, idx) => parseLitePlayer(String(p.id || idx), p));
-          } else if (typeof rawPlayers === 'object') {
-             parsed = Object.entries(rawPlayers).map(([k, v]) => parseLitePlayer(k, v));
-          }
-          
-          if (parsed.length > 0) {
-              setLiteData(parsed);
-              // SUCCESS: Save valid data to backup
-              localStorage.setItem(STORAGE_KEY_LITE, JSON.stringify(parsed));
-          } else {
-              throw new Error("Parsed players list is empty");
-          }
-        } else {
-             throw new Error("No players found in dataRoot");
-        }
-      } catch (e) {
-        console.warn("Lite fetch failed or data empty. Attempting backup restore...", e);
-        // FALLBACK: Load from LocalStorage
+    const loadStaticData = () => {
         try {
-            const backup = localStorage.getItem(STORAGE_KEY_LITE);
-            if (backup) {
-                const parsedBackup = JSON.parse(backup);
-                if (parsedBackup && parsedBackup.length > 0) {
-                    setLiteData(parsedBackup);
-                    console.log("Restored lite data from backup.");
+            const rawPlayers = STATIC_GAMESTATE.gamestate.players;
+            
+            if (rawPlayers && Array.isArray(rawPlayers)) {
+                // Используем тот же парсер, что и раньше, чтобы сохранить логику (цвета, эффекты, инвентарь)
+                const parsed = rawPlayers.map((p, idx) => parseLitePlayer(String(p.id || idx), p));
+                
+                if (parsed.length > 0) {
+                    setLiteData(parsed);
                 }
+            } else {
+                console.error("Static data format error: players is not an array");
             }
-        } catch (backupError) {
-            console.error("Backup restore failed:", backupError);
+        } catch (e) {
+            console.error("Failed to load static gamestate:", e);
         }
-      }
     };
 
-    // Если данных ВООБЩЕ нет (первый заход), грузим сразу. Иначе ждем интервала.
-    if (liteData.length === 0) {
-      fetchLiteState();
-    }
-
-    const interval = setInterval(fetchLiteState, 1 * 60 * 1000); // 5 Minutes
-    return () => clearInterval(interval);
+    loadStaticData();
+    // Нет интервала, загружаем один раз
   }, []); 
 
-  // 2. BACKGROUND LOOP: Запрашиваем Историю каждые 10 минут
+  // 2. STATIC LOAD: Загружаем историю из файла STATIC_HISTORY
   useEffect(() => {
-    const fetchHistoryState = async () => {
+    const loadHistoryState = () => {
       try {
-        const response = await fetch(`${FIREBASE_HISTORY_URL}/.json`); 
-        
-        // FAIL-SAFE: Network Error
-        if (!response.ok) {
-            throw new Error(`History Network error: ${response.status}`);
-        }
-
-        const raw = await response.json();
-        
-        // FAIL-SAFE: Empty Data
-        if (!raw) {
-            throw new Error("History data is null or empty");
-        }
+        const raw = STATIC_HISTORY;
         
         const newHistoryMap: HistoryData = {};
         
-        // --- UNITY DATA STRUCTURE PARSING ---
         let rawPlayers = null;
-        
-        if (raw.players && Array.isArray(raw.players)) {
-            rawPlayers = raw.players;
-        } else if (raw.history && raw.history.players) {
+        if (raw.history && raw.history.players) {
             rawPlayers = raw.history.players;
-        } else if (raw.gamestate && raw.gamestate.players) {
-            rawPlayers = raw.gamestate.players;
         }
 
         if (rawPlayers) {
@@ -269,11 +188,9 @@ export const useGameData = () => {
             list.forEach((p: any, idx: number) => {
                 if (!p) return;
                 
-                // Ensure ID matches the lite data (String)
                 const id = String(p.id !== undefined ? p.id : idx);
                 
                 let hist: MatchHistory[] = [];
-                // Unity Class: WebPlayerHistory -> public List<WebHistory> history;
                 if (p.history && Array.isArray(p.history)) {
                      hist = p.history.map((h: any) => ({
                         day: Number(h.day || 0),
@@ -290,40 +207,15 @@ export const useGameData = () => {
             
             if (Object.keys(newHistoryMap).length > 0) {
                 setHistoryData(newHistoryMap);
-                // SUCCESS: Save valid history to backup
                 localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(newHistoryMap));
-            } else {
-                 throw new Error("Parsed history is empty");
             }
-
-        } else {
-             throw new Error("Could not find 'players' list in history response");
         }
       } catch (e) {
-        console.warn("History fetch failed. Attempting backup restore...", e);
-        // FALLBACK: Load from LocalStorage
-        try {
-            const backup = localStorage.getItem(STORAGE_KEY_HISTORY);
-            if (backup) {
-                const parsedBackup = JSON.parse(backup);
-                if (parsedBackup && Object.keys(parsedBackup).length > 0) {
-                    setHistoryData(parsedBackup);
-                    console.log("Restored history data from backup.");
-                }
-            }
-        } catch (backupError) {
-            console.error("History backup restore failed:", backupError);
-        }
+        console.error("Failed to load static history:", e);
       }
     };
 
-    // Если истории нет в кэше, грузим сразу
-    if (Object.keys(historyData).length === 0) {
-      fetchHistoryState();
-    }
-
-    const interval = setInterval(fetchHistoryState, 10 * 60 * 1000); // 10 Minutes
-    return () => clearInterval(interval);
+    loadHistoryState();
   }, []);
 
   // 3. TWITCH LOOP: Запрашиваем статус стримов каждые 60 секунд
@@ -335,14 +227,13 @@ export const useGameData = () => {
           setLiveStatusData(statuses);
       };
 
-      // Run initially if we have player data
       if (liteData.length > 0) {
           fetchTwitch();
       }
 
-      const interval = setInterval(fetchTwitch, 60000); // 60 seconds
+      const interval = setInterval(fetchTwitch, 60000);
       return () => clearInterval(interval);
-  }, [liteData.length]); // Re-run if player list size changes (initially populated)
+  }, [liteData.length]); 
 
 
   // 4. MERGE: Объединяем быстрые данные, медленную историю и Twitch
@@ -358,14 +249,16 @@ export const useGameData = () => {
         const gamesPlayed = history.length;
         const wins = history.filter(h => 
             (h.result || '').toLowerCase().includes('пройдено') ||
-            (h.result || '').toLowerCase().includes('win')
+            (h.result || '').toLowerCase().includes('win') ||
+            (h.result || '').toLowerCase().includes('pobed') ||
+            (h.result || '').toLowerCase().includes('побед') ||
+            (h.result || '').toLowerCase().includes('1')
         ).length;
 
         // Calculate DROPS
-        // Added Cyrillic 'дроп' check
         const drops = history.filter(h => {
              const r = (h.result || '').toLowerCase();
-             return r.includes('drop') || r.includes('дроп');
+             return r.includes('drop') || r.includes('дроп') || r.includes('dead') || r.includes('death') || r.includes('выбыл') || r.includes('погиб') || r.includes('смерть');
         }).length;
 
         // Calculate REROLLS
@@ -379,7 +272,6 @@ export const useGameData = () => {
         const isLive = twitchStatus?.isLive || false;
         const twitchCategory = twitchStatus?.category;
         
-        // Construct full URL using logic from twitchService
         const twitchUsername = getTwitchUrl(lite.name) || undefined;
 
         return {
@@ -387,7 +279,7 @@ export const useGameData = () => {
             history,
             isLive,
             twitchUsername,
-            twitchCategory, // Add extracted category
+            twitchCategory,
             stats: {
                 gamesPlayed,
                 wins,

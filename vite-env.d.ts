@@ -1,4 +1,6 @@
-// Manual type definitions to replace missing 'vite/client'
+// /// <reference types="vite/client" />
+
+import 'react';
 
 declare module '*.svg' {
   const content: string;
@@ -40,16 +42,26 @@ declare module '*.bmp' {
   export default content;
 }
 
-// Vite Environment Variables
-interface ImportMetaEnv {
-  readonly VITE_TWITCH_CLIENT_ID: string;
-  readonly VITE_TWITCH_CLIENT_SECRET: string;
-  readonly VITE_RAWG_API_KEY: string;
-  readonly VITE_FIREBASE_BASE_URL: string;
-  readonly VITE_FIREBASE_HISTORY_URL: string;
-  readonly [key: string]: string | boolean | undefined;
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      group: any;
+      mesh: any;
+      directionalLight: any;
+      ambientLight: any;
+      pointLight: any;
+      fog: any;
+      points: any;
+      shaderMaterial: any;
+      octahedronGeometry: any;
+      meshStandardMaterial: any;
+      cylinderGeometry: any;
+      meshBasicMaterial: any;
+      ringGeometry: any;
+      instancedMesh: any;
+      boxGeometry: any;
+      planeGeometry: any;
+      primitive: any;
+    }
+  }
 }

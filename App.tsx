@@ -6,6 +6,7 @@ import { GlossaryView } from './components/Glossary/GlossaryView';
 import { LoadingScreen } from './components/UI/LoadingScreen';
 import { useGameData } from './services/gameService';
 import { useProgress } from '@react-three/drei';
+import { preloadIcons } from './services/iconService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('map');
@@ -18,33 +19,36 @@ const App: React.FC = () => {
   // App-level Loading State
   const [isAppReady, setIsAppReady] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
+  const [iconsLoaded, setIconsLoaded] = useState(false);
 
-  // Check if everything is ready (Assets loaded + Data fetched)
+  // Preload Icons
+  useEffect(() => {
+    preloadIcons().then(() => setIconsLoaded(true));
+  }, []);
+
+  // Check if everything is ready (Assets + Data + Icons)
   useEffect(() => {
     // We consider it ready when:
     // 1. 3D Progress is 100% (or not active anymore)
-    // 2. Players data has been loaded (length > 0) OR a timeout has passed (fail-safe for empty data)
-    
-    // Note: players might be empty initially. useGameData returns [] then fetches.
-    // If connection fails, players stays []. We don't want to lock the screen forever.
+    // 2. Players data has been loaded (length > 0) OR a timeout has passed
+    // 3. Icons are preloaded
     
     const assetsLoaded = progress === 100;
     const dataLoaded = players.length > 0;
 
-    if (assetsLoaded && dataLoaded) {
+    if (assetsLoaded && dataLoaded && iconsLoaded) {
         setIsAppReady(true);
     } 
     
-    // Fail-safe: If assets are loaded but data is taking too long (e.g. server error or 0 players),
-    // force ready after 5 seconds of assets being done.
-    if (assetsLoaded && !dataLoaded) {
+    // Fail-safe: If assets/icons are loaded but data is taking too long
+    if (assetsLoaded && iconsLoaded && !dataLoaded) {
         const timer = setTimeout(() => {
              setIsAppReady(true);
         }, 5000);
         return () => clearTimeout(timer);
     }
     
-  }, [progress, players]);
+  }, [progress, players, iconsLoaded]);
 
   const handlePlayerFocus = (playerId: string) => {
     setActiveTab('map');
